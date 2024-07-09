@@ -1,0 +1,21 @@
+mode: count
+github.com/posilva/simplematchmaking/internal/core/services/matchmaking.go:10.50,12.2 1 0
+github.com/posilva/simplematchmaking/internal/core/services/matchmaking.go:15.63,18.2 2 0
+github.com/posilva/simplematchmaking/internal/adapters/output/logging/logger.go:11.38,15.2 1 0
+github.com/posilva/simplematchmaking/internal/adapters/output/logging/logger.go:23.74,26.2 2 0
+github.com/posilva/simplematchmaking/internal/adapters/output/logging/logger.go:29.73,33.2 2 0
+github.com/posilva/simplematchmaking/internal/adapters/output/logging/logger.go:36.74,39.2 2 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:15.13,42.2 8 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:44.43,45.16 1 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:45.16,46.44 1 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:52.62,54.2 1 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:56.76,57.2 0 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:59.101,60.2 0 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:62.103,63.2 0 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:65.105,66.2 0 0
+github.com/posilva/simplematchmaking/internal/adapters/output/telemetry/telemetry.go:68.103,69.2 0 0
+github.com/posilva/simplematchmaking/internal/adapters/input/handler/http.go:16.64,20.2 1 0
+github.com/posilva/simplematchmaking/internal/adapters/input/handler/http.go:23.48,25.2 1 0
+github.com/posilva/simplematchmaking/internal/testutil/testutil.go:12.32,14.2 1 0
+github.com/posilva/simplematchmaking/internal/testutil/testutil.go:17.21,19.2 1 0
+github.com/posilva/simplematchmaking/internal/testutil/testutil.go:22.38,24.2 1 0

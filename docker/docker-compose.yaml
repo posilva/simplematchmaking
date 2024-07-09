@@ -1,0 +1,11 @@
+version: '3.9'
+services:
+
+  redis:
+    container_name: "${REDIS_DOCKER_NAME-localredis}"
+    restart: "on-failure"
+    image: redis:7.0.10-alpine3.17
+    ports:
+      - "0.0.0.0:6379:6379"
+    volumes:
+      - "${REDIS_VOLUME_DIR:-./localredis_volume}:/data"
