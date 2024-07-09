@@ -1,4 +1,4 @@
-.PHONY: run fmt test cover infra-up infra-up infra-test infra-local infra-local-down infra-upd lint setup testis
+.PHONY: run fmt test cover infra-up infra-up infra-test infra-local infra-local-down infra-upd lint setup testis mocks
 
 # This assumes tflocal is installed https://github.com/localstack/terraform-local
 
@@ -53,3 +53,6 @@ docker-build:
 
 docker-run:
 	docker run -d  -it simplematchmaking
+
+mocks:
+	mockgen -source=internal/core/ports/ports.go -destination=internal/core/ports/mocks/ports_mock.go -package=mocks
