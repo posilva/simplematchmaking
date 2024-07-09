@@ -15,7 +15,7 @@ type Logger interface {
 
 // MatchmakingService defines the matchmaking service interface
 type MatchmakingService interface {
-	AddPlayer(domain.Player) error
+	FindMatch(domain.Player) (domain.Ticket, error)
 }
 
 // Provider generic interface

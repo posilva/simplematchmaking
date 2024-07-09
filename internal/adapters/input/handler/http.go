@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/posilva/simplematchmaking/internal/core/domain"
 	"github.com/posilva/simplematchmaking/internal/core/ports"
 )
 
@@ -21,5 +22,14 @@ func NewHTTPHandler(srv ports.MatchmakingService) *HTTPHandler {
 
 // Handle handles the GET / endpoint
 func (h *HTTPHandler) Handle(ctx *gin.Context) {
-	ctx.String(http.StatusOK, "OK")
+	t, err := h.service.FindMatch(domain.Player{
+		ID: "1",
+	})
+	if err != nil {
+		// TODO: log error
+		ctx.String(http.StatusInternalServerError, "failed to find a match")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, t)
 }

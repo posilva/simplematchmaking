@@ -32,7 +32,7 @@ func (suite *E2ETestSuite) TearDownSuite() {
 func (suite *E2ETestSuite) TestSimple() {
 	resp, err := makeRequest()
 	suite.NoError(err)
-	suite.Equal("OK", resp)
+	suite.Equal("{\"id\":\"ticket1\"}", resp)
 }
 
 func TestE2E(t *testing.T) {

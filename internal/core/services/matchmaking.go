@@ -1,6 +1,8 @@
 package services
 
-import "github.com/posilva/simplematchmaking/internal/core/domain"
+import (
+	"github.com/posilva/simplematchmaking/internal/core/domain"
+)
 
 // MatchmakingService defines the Matchmaking service interface
 type MatchmakingService struct {
@@ -11,8 +13,10 @@ func NewMatchmakingService() *MatchmakingService {
 	return &MatchmakingService{}
 }
 
-// AddPlayer adds a new player
-func (s *MatchmakingService) AddPlayer(p domain.Player) error {
+// FindMatch finds a match given a player
+func (s *MatchmakingService) FindMatch(p domain.Player) (domain.Ticket, error) {
 	_ = p
-	return nil
+	return domain.Ticket{
+		ID: "ticket1",
+	}, nil
 }
