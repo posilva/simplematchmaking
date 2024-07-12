@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,16 +21,57 @@ func NewHTTPHandler(srv ports.MatchmakingService) *HTTPHandler {
 	}
 }
 
-// Handle handles the GET / endpoint
-func (h *HTTPHandler) Handle(ctx *gin.Context) {
-	t, err := h.service.FindMatch(domain.Player{
-		ID: "1",
+// HandleFindMatch handles the find match request
+func (h *HTTPHandler) HandleFindMatch(ctx *gin.Context) {
+	var in FindMatchInput
+	err := ctx.Bind(&in)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "invalid input")
+		return
+	}
+
+	t, err := h.service.FindMatch("global", domain.Player{
+		ID:      "1",
+		Ranking: 1,
 	})
+
 	if err != nil {
 		// TODO: log error
 		ctx.String(http.StatusInternalServerError, "failed to find a match")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, t)
+	ctx.JSON(http.StatusOK, FindMatchOutput{
+		TicketID: t.ID,
+	})
+}
+
+// HandleGetMatch handles the get match request
+func (h *HTTPHandler) HandleGetMatch(ctx *gin.Context) {
+	ticketID := ctx.Params.ByName("ticketID")
+
+	m, err := h.service.GetMatch(ticketID)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to get match with ticket: %v", ticketID))
+		return
+	}
+	ctx.JSON(http.StatusOK, GetMatchOutput{
+		MatchID: m.ID,
+	})
+}
+
+// HandleCancelMatch handles the cancel match request
+func (h *HTTPHandler) HandleCancelMatch(ctx *gin.Context) {
+	ticketID := ctx.Params.ByName("ticketID")
+	err := h.service.CancelMatch(ticketID)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to cancel match with ticket: %v", ticketID))
+		return
+	}
+	ctx.String(http.StatusOK, "match canceled")
+}
+
+// HandleRoot handles the root request
+func (h *HTTPHandler) HandleRoot(ctx *gin.Context) {
+	ctx.String(http.StatusOK, "Simple Matchmaking Service")
 }

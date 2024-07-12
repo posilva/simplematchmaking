@@ -19,10 +19,12 @@ func Run() {
 	}
 
 	httpHandler := handler.NewHTTPHandler(service)
-	r.GET("/", httpHandler.Handle)
+	r.GET("/", httpHandler.HandleRoot)
 	api := r.Group("api/v1")
 
-	api.GET("/mm", httpHandler.Handle)
+	api.PUT("/queue", httpHandler.HandleFindMatch)
+	api.GET("/queue/:ticketId", httpHandler.HandleGetMatch)
+	api.DELETE("/queue/:ticketId", httpHandler.HandleCancelMatch)
 
 	err = r.Run(config.GetAddr())
 	if err != nil {
