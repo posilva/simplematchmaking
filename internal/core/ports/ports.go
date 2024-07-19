@@ -1,28 +1,27 @@
 package ports
 
-import "github.com/posilva/simplematchmaking/internal/core/domain"
+import (
+	"context"
 
-// Queue defines the Matchmaking queue interface
-type Queue interface {
-	Enqueue(domain.Ticket) error
-	Dequeue(num int) (domain.Ticket, error)
-}
+	"github.com/posilva/simplematchmaking/internal/core/domain"
+)
 
-// QueueManager defines the Matchmaking queue manager interface
-type QueueManager interface {
-	Enqueue(name string, t domain.Ticket) error
-	Dequeue(name string, num int) (domain.Ticket, error)
+// Matchmaker defines the Matchmaker interface
+type Matchmaker interface {
+	Match(ctx context.Context) (domain.MatchResult, error)
+	AddPlayer(ctx context.Context, p domain.Player) error
 }
 
 // MatchmakingService defines the matchmaking service interface
 type MatchmakingService interface {
-	FindMatch(queue string, p domain.Player) (domain.Ticket, error)
-	GetMatch(ticketID string) (domain.Match, error)
-	CancelMatch(ticketID string) error
+	FindMatch(ctx context.Context, queue string, p domain.Player) (domain.Ticket, error)
+	CheckMatch(ctx context.Context, ticketID string) (domain.Match, error)
+	CancelMatch(ctx context.Context, ticketID string) error
 }
 
 // Repository defines the interface to handle with
 type Repository interface {
+	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error)
 }
 
 // Logger defines a basic logger interface

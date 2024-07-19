@@ -35,7 +35,7 @@ test:
 
 
 testi:
-	go test -timeout 50000ms -v --short ./tests/...
+	go test -timeout 50000ms -v --short ./tests/... -covermode=count -coverprofile=cover.out && go tool cover -func=cover.out
 
 testis:
 	go test -timeout 50000ms -v ./tests/... -tags=integration

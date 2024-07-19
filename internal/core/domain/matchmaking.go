@@ -15,3 +15,16 @@ type Ticket struct {
 type Match struct {
 	ID string `json:"id"`
 }
+
+// MatchResult ...
+type MatchResult struct {
+	Match   Match    `json:"match"`
+	Tickets []Ticket `json:"tickets"`
+}
+
+// MatchmakerConfig ...
+type MatchmakerConfig struct {
+	MaxPlayers int    `json:"maxPlayers"`
+	Name       string `json:"name"`
+	Queue      string `json:"queue"`
+}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/carlmjohnson/requests"
@@ -39,7 +40,7 @@ func (suite *E2ETestSuite) TestFindMatch() {
 	var out handler.FindMatchOutput
 	err = json.Unmarshal([]byte(resp), &out)
 	suite.NoError(err)
-	suite.Equal("ticket1", out.TicketID)
+	suite.Regexp(regexp.MustCompile("^[a-zA-Z0-9]{27}$"), out.TicketID)
 }
 
 func (suite *E2ETestSuite) TestGetMatch() {

@@ -30,7 +30,7 @@ func (h *HTTPHandler) HandleFindMatch(ctx *gin.Context) {
 		return
 	}
 
-	t, err := h.service.FindMatch("global", domain.Player{
+	t, err := h.service.FindMatch(ctx.Request.Context(), "global", domain.Player{
 		ID:      "1",
 		Ranking: 1,
 	})
@@ -46,11 +46,11 @@ func (h *HTTPHandler) HandleFindMatch(ctx *gin.Context) {
 	})
 }
 
-// HandleGetMatch handles the get match request
-func (h *HTTPHandler) HandleGetMatch(ctx *gin.Context) {
+// HandleCheckMatch handles the get match request
+func (h *HTTPHandler) HandleCheckMatch(ctx *gin.Context) {
 	ticketID := ctx.Params.ByName("ticketID")
 
-	m, err := h.service.GetMatch(ticketID)
+	m, err := h.service.CheckMatch(ctx.Request.Context(), ticketID)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to get match with ticket: %v", ticketID))
 		return
@@ -63,7 +63,7 @@ func (h *HTTPHandler) HandleGetMatch(ctx *gin.Context) {
 // HandleCancelMatch handles the cancel match request
 func (h *HTTPHandler) HandleCancelMatch(ctx *gin.Context) {
 	ticketID := ctx.Params.ByName("ticketID")
-	err := h.service.CancelMatch(ticketID)
+	err := h.service.CancelMatch(ctx.Request.Context(), ticketID)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, fmt.Sprintf("failed to cancel match with ticket: %v", ticketID))
 		return

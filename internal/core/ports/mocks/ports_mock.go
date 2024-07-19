@@ -10,11 +10,131 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	domain "github.com/posilva/simplematchmaking/internal/core/domain"
 	gomock "go.uber.org/mock/gomock"
 )
+
+// MockMatchmaker is a mock of Matchmaker interface.
+type MockMatchmaker struct {
+	ctrl     *gomock.Controller
+	recorder *MockMatchmakerMockRecorder
+}
+
+// MockMatchmakerMockRecorder is the mock recorder for MockMatchmaker.
+type MockMatchmakerMockRecorder struct {
+	mock *MockMatchmaker
+}
+
+// NewMockMatchmaker creates a new mock instance.
+func NewMockMatchmaker(ctrl *gomock.Controller) *MockMatchmaker {
+	mock := &MockMatchmaker{ctrl: ctrl}
+	mock.recorder = &MockMatchmakerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMatchmaker) EXPECT() *MockMatchmakerMockRecorder {
+	return m.recorder
+}
+
+// AddPlayer mocks base method.
+func (m *MockMatchmaker) AddPlayer(ctx context.Context, p domain.Player) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPlayer", ctx, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPlayer indicates an expected call of AddPlayer.
+func (mr *MockMatchmakerMockRecorder) AddPlayer(ctx, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockMatchmaker)(nil).AddPlayer), ctx, p)
+}
+
+// Match mocks base method.
+func (m *MockMatchmaker) Match(ctx context.Context) (domain.MatchResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Match", ctx)
+	ret0, _ := ret[0].(domain.MatchResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Match indicates an expected call of Match.
+func (mr *MockMatchmakerMockRecorder) Match(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Match", reflect.TypeOf((*MockMatchmaker)(nil).Match), ctx)
+}
+
+// MockMatchmakingService is a mock of MatchmakingService interface.
+type MockMatchmakingService struct {
+	ctrl     *gomock.Controller
+	recorder *MockMatchmakingServiceMockRecorder
+}
+
+// MockMatchmakingServiceMockRecorder is the mock recorder for MockMatchmakingService.
+type MockMatchmakingServiceMockRecorder struct {
+	mock *MockMatchmakingService
+}
+
+// NewMockMatchmakingService creates a new mock instance.
+func NewMockMatchmakingService(ctrl *gomock.Controller) *MockMatchmakingService {
+	mock := &MockMatchmakingService{ctrl: ctrl}
+	mock.recorder = &MockMatchmakingServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMatchmakingService) EXPECT() *MockMatchmakingServiceMockRecorder {
+	return m.recorder
+}
+
+// CancelMatch mocks base method.
+func (m *MockMatchmakingService) CancelMatch(ctx context.Context, ticketID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelMatch", ctx, ticketID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelMatch indicates an expected call of CancelMatch.
+func (mr *MockMatchmakingServiceMockRecorder) CancelMatch(ctx, ticketID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelMatch", reflect.TypeOf((*MockMatchmakingService)(nil).CancelMatch), ctx, ticketID)
+}
+
+// CheckMatch mocks base method.
+func (m *MockMatchmakingService) CheckMatch(ctx context.Context, ticketID string) (domain.Match, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckMatch", ctx, ticketID)
+	ret0, _ := ret[0].(domain.Match)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckMatch indicates an expected call of CheckMatch.
+func (mr *MockMatchmakingServiceMockRecorder) CheckMatch(ctx, ticketID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckMatch", reflect.TypeOf((*MockMatchmakingService)(nil).CheckMatch), ctx, ticketID)
+}
+
+// FindMatch mocks base method.
+func (m *MockMatchmakingService) FindMatch(ctx context.Context, queue string, p domain.Player) (domain.Ticket, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindMatch", ctx, queue, p)
+	ret0, _ := ret[0].(domain.Ticket)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindMatch indicates an expected call of FindMatch.
+func (mr *MockMatchmakingServiceMockRecorder) FindMatch(ctx, queue, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMatch", reflect.TypeOf((*MockMatchmakingService)(nil).FindMatch), ctx, queue, p)
+}
 
 // MockRepository is a mock of Repository interface.
 type MockRepository struct {
@@ -37,6 +157,21 @@ func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
+}
+
+// ReservePlayerSlot mocks base method.
+func (m *MockRepository) ReservePlayerSlot(ctx context.Context, playerID, slot, ticketID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReservePlayerSlot", ctx, playerID, slot, ticketID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReservePlayerSlot indicates an expected call of ReservePlayerSlot.
+func (mr *MockRepositoryMockRecorder) ReservePlayerSlot(ctx, playerID, slot, ticketID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReservePlayerSlot", reflect.TypeOf((*MockRepository)(nil).ReservePlayerSlot), ctx, playerID, slot, ticketID)
 }
 
 // MockLogger is a mock of Logger interface.
@@ -117,43 +252,6 @@ func (mr *MockLoggerMockRecorder) Info(msg any, v ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{msg}, v...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockLogger)(nil).Info), varargs...)
-}
-
-// MockMatchmakingService is a mock of MatchmakingService interface.
-type MockMatchmakingService struct {
-	ctrl     *gomock.Controller
-	recorder *MockMatchmakingServiceMockRecorder
-}
-
-// MockMatchmakingServiceMockRecorder is the mock recorder for MockMatchmakingService.
-type MockMatchmakingServiceMockRecorder struct {
-	mock *MockMatchmakingService
-}
-
-// NewMockMatchmakingService creates a new mock instance.
-func NewMockMatchmakingService(ctrl *gomock.Controller) *MockMatchmakingService {
-	mock := &MockMatchmakingService{ctrl: ctrl}
-	mock.recorder = &MockMatchmakingServiceMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockMatchmakingService) EXPECT() *MockMatchmakingServiceMockRecorder {
-	return m.recorder
-}
-
-// AddPlayer mocks base method.
-func (m *MockMatchmakingService) AddPlayer(arg0 domain.Player) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddPlayer", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddPlayer indicates an expected call of AddPlayer.
-func (mr *MockMatchmakingServiceMockRecorder) AddPlayer(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockMatchmakingService)(nil).AddPlayer), arg0)
 }
 
 // MockProvider is a mock of Provider interface.
