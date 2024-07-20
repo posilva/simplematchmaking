@@ -6,9 +6,20 @@ import (
 	"github.com/posilva/simplematchmaking/internal/core/domain"
 )
 
+// Codec defines the interface to encode/decode data
+type Codec interface {
+	Encode(v interface{}) ([]byte, error)
+	Decode(data []byte, v interface{}) error
+}
+
 // Matchmaker defines the Matchmaker interface
 type Matchmaker interface {
 	Match(ctx context.Context) (domain.MatchResult, error)
+	AddPlayer(ctx context.Context, p domain.Player) error
+}
+
+// Queue defines the Queue interface
+type Queue interface {
 	AddPlayer(ctx context.Context, p domain.Player) error
 }
 
@@ -21,7 +32,12 @@ type MatchmakingService interface {
 
 // Repository defines the interface to handle with
 type Repository interface {
+	// ReservePlayerSlot reserves a player slot in the queue
 	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error)
+	// UpdateTicket updates the ticket status
+	UpdateTicketStatus(ctx context.Context, status domain.TicketStatus) error
+	// GetTicketStatus gets the ticket status
+	GetTicketStatus(ctx context.Context, ticketID string) (domain.TicketStatus, error)
 }
 
 // Logger defines a basic logger interface

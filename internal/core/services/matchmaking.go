@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
 	"github.com/posilva/simplematchmaking/internal/core/ports"
@@ -28,6 +29,7 @@ func NewMatchmakingService(logger ports.Logger, repo ports.Repository, mm ports.
 // FindMatch finds a match given a player
 func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p domain.Player) (domain.Ticket, error) {
 	ticketID := ksuid.New().String()
+	now := time.Now().UTC().Unix()
 
 	// check if the player is already in the queue
 	ok, err := s.repository.ReservePlayerSlot(ctx, p.ID, queue, ticketID)
@@ -44,6 +46,19 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 	if err != nil {
 		s.logger.Error("Failed to add player to the matchmaker", err)
 		return domain.Ticket{}, fmt.Errorf("failed to add player to the matchmaker: %v", err)
+	}
+
+	status := domain.TicketStatus{
+		ID:        ticketID,
+		Timestamp: now,
+		State:     domain.TicketStateQueued,
+		PlayerID:  p.ID,
+	}
+
+	err = s.repository.UpdateTicketStatus(ctx, status)
+	if err != nil {
+		s.logger.Error("Failed to update ticket", err)
+		return domain.Ticket{}, fmt.Errorf("failed to update ticket: %v", err)
 	}
 
 	return domain.Ticket{

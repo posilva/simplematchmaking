@@ -7,11 +7,12 @@ import (
 	"github.com/posilva/simplematchmaking/cmd/simplematchmaking/config"
 	"github.com/posilva/simplematchmaking/internal/adapters/input/handler"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/logging"
-	"github.com/posilva/simplematchmaking/internal/adapters/output/matchmaker"
+	"github.com/posilva/simplematchmaking/internal/adapters/output/queues"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/repository"
 	"github.com/redis/rueidis"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
+	"github.com/posilva/simplematchmaking/internal/core/domain/codecs"
 	"github.com/posilva/simplematchmaking/internal/core/services"
 )
 
@@ -51,13 +52,14 @@ func createService() (*services.MatchmakingService, error) {
 	mmCfg := domain.MatchmakerConfig{
 		MaxPlayers: 2,
 	}
-
-	mm, err := matchmaker.NewRedisMatchmaker(rc, mmCfg)
+	queue := queues.NewRedisQueue(rc, "main")
+	mm, err := services.NewMatchmaker(queue, mmCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matchmaker: %v", err)
 	}
 
-	repo := repository.NewRedisRepository(rc)
+	codec := codecs.NewMsgPackCodec()
+	repo := repository.NewRedisRepository(rc, codec)
 
 	return services.NewMatchmakingService(logger, repo, mm), nil
 }

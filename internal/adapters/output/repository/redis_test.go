@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/posilva/simplematchmaking/internal/core/ports/mocks"
 	"github.com/redis/rueidis/mock"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
@@ -28,8 +29,9 @@ func TestReservePlayerSlotOK(t *testing.T) {
 	).Return(
 		mock.Result(mock.RedisInt64(1)),
 	)
-	// Create a new RedisRepository
-	repo := NewRedisRepository(clt)
+
+	codec := mocks.NewMockCodec(ctrl)
+	repo := NewRedisRepository(clt, codec)
 
 	ok, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
 	assert.NoError(t, err)
@@ -54,8 +56,9 @@ func TestReservePlayerSlotExistsError(t *testing.T) {
 	).Return(
 		mock.Result(mock.RedisInt64(0)),
 	)
-	// Create a new RedisRepository
-	repo := NewRedisRepository(clt)
+
+	codec := mocks.NewMockCodec(ctrl)
+	repo := NewRedisRepository(clt, codec)
 
 	ok, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
 	assert.NoError(t, err)
@@ -81,8 +84,8 @@ func TestReservePlayerSlotError(t *testing.T) {
 	).Return(
 		mock.ErrorResult(fmt.Errorf(errMsg)),
 	)
-	// Create a new RedisRepository
-	repo := NewRedisRepository(clt)
+	codec := mocks.NewMockCodec(ctrl)
+	repo := NewRedisRepository(clt, codec)
 
 	ok, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
 	assert.ErrorContains(t, err, errMsg)

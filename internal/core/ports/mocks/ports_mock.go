@@ -17,6 +17,58 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
+// MockCodec is a mock of Codec interface.
+type MockCodec struct {
+	ctrl     *gomock.Controller
+	recorder *MockCodecMockRecorder
+}
+
+// MockCodecMockRecorder is the mock recorder for MockCodec.
+type MockCodecMockRecorder struct {
+	mock *MockCodec
+}
+
+// NewMockCodec creates a new mock instance.
+func NewMockCodec(ctrl *gomock.Controller) *MockCodec {
+	mock := &MockCodec{ctrl: ctrl}
+	mock.recorder = &MockCodecMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCodec) EXPECT() *MockCodecMockRecorder {
+	return m.recorder
+}
+
+// Decode mocks base method.
+func (m *MockCodec) Decode(data []byte, v any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Decode", data, v)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Decode indicates an expected call of Decode.
+func (mr *MockCodecMockRecorder) Decode(data, v any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Decode", reflect.TypeOf((*MockCodec)(nil).Decode), data, v)
+}
+
+// Encode mocks base method.
+func (m *MockCodec) Encode(v any) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Encode", v)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Encode indicates an expected call of Encode.
+func (mr *MockCodecMockRecorder) Encode(v any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Encode", reflect.TypeOf((*MockCodec)(nil).Encode), v)
+}
+
 // MockMatchmaker is a mock of Matchmaker interface.
 type MockMatchmaker struct {
 	ctrl     *gomock.Controller
@@ -67,6 +119,43 @@ func (m *MockMatchmaker) Match(ctx context.Context) (domain.MatchResult, error) 
 func (mr *MockMatchmakerMockRecorder) Match(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Match", reflect.TypeOf((*MockMatchmaker)(nil).Match), ctx)
+}
+
+// MockQueue is a mock of Queue interface.
+type MockQueue struct {
+	ctrl     *gomock.Controller
+	recorder *MockQueueMockRecorder
+}
+
+// MockQueueMockRecorder is the mock recorder for MockQueue.
+type MockQueueMockRecorder struct {
+	mock *MockQueue
+}
+
+// NewMockQueue creates a new mock instance.
+func NewMockQueue(ctrl *gomock.Controller) *MockQueue {
+	mock := &MockQueue{ctrl: ctrl}
+	mock.recorder = &MockQueueMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockQueue) EXPECT() *MockQueueMockRecorder {
+	return m.recorder
+}
+
+// AddPlayer mocks base method.
+func (m *MockQueue) AddPlayer(ctx context.Context, p domain.Player) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPlayer", ctx, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPlayer indicates an expected call of AddPlayer.
+func (mr *MockQueueMockRecorder) AddPlayer(ctx, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockQueue)(nil).AddPlayer), ctx, p)
 }
 
 // MockMatchmakingService is a mock of MatchmakingService interface.
@@ -159,6 +248,21 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
+// GetTicketStatus mocks base method.
+func (m *MockRepository) GetTicketStatus(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTicketStatus", ctx, ticketID)
+	ret0, _ := ret[0].(domain.TicketStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTicketStatus indicates an expected call of GetTicketStatus.
+func (mr *MockRepositoryMockRecorder) GetTicketStatus(ctx, ticketID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTicketStatus", reflect.TypeOf((*MockRepository)(nil).GetTicketStatus), ctx, ticketID)
+}
+
 // ReservePlayerSlot mocks base method.
 func (m *MockRepository) ReservePlayerSlot(ctx context.Context, playerID, slot, ticketID string) (bool, error) {
 	m.ctrl.T.Helper()
@@ -172,6 +276,20 @@ func (m *MockRepository) ReservePlayerSlot(ctx context.Context, playerID, slot, 
 func (mr *MockRepositoryMockRecorder) ReservePlayerSlot(ctx, playerID, slot, ticketID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReservePlayerSlot", reflect.TypeOf((*MockRepository)(nil).ReservePlayerSlot), ctx, playerID, slot, ticketID)
+}
+
+// UpdateTicketStatus mocks base method.
+func (m *MockRepository) UpdateTicketStatus(ctx context.Context, status domain.TicketStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTicketStatus", ctx, status)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateTicketStatus indicates an expected call of UpdateTicketStatus.
+func (mr *MockRepositoryMockRecorder) UpdateTicketStatus(ctx, status any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTicketStatus", reflect.TypeOf((*MockRepository)(nil).UpdateTicketStatus), ctx, status)
 }
 
 // MockLogger is a mock of Logger interface.
