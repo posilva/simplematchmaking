@@ -1,4 +1,4 @@
-.PHONY: run fmt test cover infra-up infra-up infra-test infra-local infra-local-down infra-upd lint setup testis mocks
+.PHONY: run fmt test cover infra-up infra-up infra-test infra-local infra-local-down infra-upd lint setup testis mocks alltests
 
 # This assumes tflocal is installed https://github.com/localstack/terraform-local
 
@@ -35,7 +35,7 @@ test:
 
 
 testi:
-	go test -timeout 50000ms -v --short ./tests/...
+	go test -timeout 50000ms -v --short ./tests/... -covermode=count -coverprofile=cover.out && go tool cover -func=cover.out
 
 testis:
 	go test -timeout 50000ms -v ./tests/... -tags=integration
@@ -56,3 +56,5 @@ docker-run:
 
 mocks:
 	mockgen -source=internal/core/ports/ports.go -destination=internal/core/ports/mocks/ports_mock.go -package=mocks
+
+alltests: mocks test testi		

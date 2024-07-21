@@ -10,3 +10,8 @@ type FindMatchInput struct {
 type FindMatchOutput struct {
 	TicketID string `json:"ticket_id"`
 }
+
+// GetMatchOutput is the output of getting a match
+type GetMatchOutput struct {
+	MatchID string `json:"match_id"`
+}

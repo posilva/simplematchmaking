@@ -1,9 +1,47 @@
 package ports
 
-import "github.com/posilva/simplematchmaking/internal/core/domain"
+import (
+	"context"
 
-// Repository defines the interface to handle with
+	"github.com/posilva/simplematchmaking/internal/core/domain"
+)
+
+// Codec defines the interface to encode/decode data
+type Codec interface {
+	Encode(v interface{}) ([]byte, error)
+	Decode(data []byte, v interface{}) error
+}
+
+// Matchmaker defines the Matchmaker interface
+type Matchmaker interface {
+	Match(ctx context.Context) (domain.MatchResult, error)
+	AddPlayer(ctx context.Context, p domain.Player) error
+}
+
+// Queue defines the Queue interface
+type Queue interface {
+	AddPlayer(ctx context.Context, p domain.Player) error
+}
+
+// MatchmakingService defines the matchmaking service interface
+type MatchmakingService interface {
+	FindMatch(ctx context.Context, queue string, p domain.Player) (domain.Ticket, error)
+	CheckMatch(ctx context.Context, ticketID string) (domain.Match, error)
+	CancelMatch(ctx context.Context, ticketID string) error
+}
+
+// Repository defines the interface to handle with data to be stored/retrieved
 type Repository interface {
+	// ReservePlayerSlot reserves a player slot in the queue
+	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error)
+	// DeletePlayerSlot deletes a player slot in the queue
+	DeletePlayerSlot(ctx context.Context, playerID string, slot string) error
+	// UpdateTicket updates the ticket status
+	UpdateTicket(ctx context.Context, status domain.TicketStatus) error
+	// GetTicket gets the ticket status
+	GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
+	// DeleteTicket deletes the ticket status
+	DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
 }
 
 // Logger defines a basic logger interface
@@ -11,11 +49,6 @@ type Logger interface {
 	Debug(msg string, v ...interface{}) error
 	Info(msg string, v ...interface{}) error
 	Error(msg string, v ...interface{}) error
-}
-
-// MatchmakingService defines the matchmaking service interface
-type MatchmakingService interface {
-	FindMatch(domain.Player) (domain.Ticket, error)
 }
 
 // Provider generic interface
