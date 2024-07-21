@@ -248,19 +248,48 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// GetTicketStatus mocks base method.
-func (m *MockRepository) GetTicketStatus(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+// DeletePlayerSlot mocks base method.
+func (m *MockRepository) DeletePlayerSlot(ctx context.Context, playerID, slot string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTicketStatus", ctx, ticketID)
+	ret := m.ctrl.Call(m, "DeletePlayerSlot", ctx, playerID, slot)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePlayerSlot indicates an expected call of DeletePlayerSlot.
+func (mr *MockRepositoryMockRecorder) DeletePlayerSlot(ctx, playerID, slot any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePlayerSlot", reflect.TypeOf((*MockRepository)(nil).DeletePlayerSlot), ctx, playerID, slot)
+}
+
+// DeleteTicket mocks base method.
+func (m *MockRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteTicket", ctx, ticketID)
 	ret0, _ := ret[0].(domain.TicketStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTicketStatus indicates an expected call of GetTicketStatus.
-func (mr *MockRepositoryMockRecorder) GetTicketStatus(ctx, ticketID any) *gomock.Call {
+// DeleteTicket indicates an expected call of DeleteTicket.
+func (mr *MockRepositoryMockRecorder) DeleteTicket(ctx, ticketID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTicketStatus", reflect.TypeOf((*MockRepository)(nil).GetTicketStatus), ctx, ticketID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTicket", reflect.TypeOf((*MockRepository)(nil).DeleteTicket), ctx, ticketID)
+}
+
+// GetTicket mocks base method.
+func (m *MockRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTicket", ctx, ticketID)
+	ret0, _ := ret[0].(domain.TicketStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTicket indicates an expected call of GetTicket.
+func (mr *MockRepositoryMockRecorder) GetTicket(ctx, ticketID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTicket", reflect.TypeOf((*MockRepository)(nil).GetTicket), ctx, ticketID)
 }
 
 // ReservePlayerSlot mocks base method.
@@ -278,18 +307,18 @@ func (mr *MockRepositoryMockRecorder) ReservePlayerSlot(ctx, playerID, slot, tic
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReservePlayerSlot", reflect.TypeOf((*MockRepository)(nil).ReservePlayerSlot), ctx, playerID, slot, ticketID)
 }
 
-// UpdateTicketStatus mocks base method.
-func (m *MockRepository) UpdateTicketStatus(ctx context.Context, status domain.TicketStatus) error {
+// UpdateTicket mocks base method.
+func (m *MockRepository) UpdateTicket(ctx context.Context, status domain.TicketStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateTicketStatus", ctx, status)
+	ret := m.ctrl.Call(m, "UpdateTicket", ctx, status)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateTicketStatus indicates an expected call of UpdateTicketStatus.
-func (mr *MockRepositoryMockRecorder) UpdateTicketStatus(ctx, status any) *gomock.Call {
+// UpdateTicket indicates an expected call of UpdateTicket.
+func (mr *MockRepositoryMockRecorder) UpdateTicket(ctx, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTicketStatus", reflect.TypeOf((*MockRepository)(nil).UpdateTicketStatus), ctx, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTicket", reflect.TypeOf((*MockRepository)(nil).UpdateTicket), ctx, status)
 }
 
 // MockLogger is a mock of Logger interface.

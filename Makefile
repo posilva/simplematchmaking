@@ -57,4 +57,4 @@ docker-run:
 mocks:
 	mockgen -source=internal/core/ports/ports.go -destination=internal/core/ports/mocks/ports_mock.go -package=mocks
 
-alltests: test testi		
+alltests: mocks test testi		

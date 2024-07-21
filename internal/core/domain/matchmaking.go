@@ -66,4 +66,8 @@ type TicketStatus struct {
 	State TicketState `json:"state" msgpack:"state" mapstructure:"state"`
 	// PlayerID is the player ID
 	PlayerID string `json:"uid" msgpack:"uid" mapstructure:"uid"`
+	// MatchID is the match ID
+	MatchID string `json:"mid" msgpack:"mid" mapstructure:"mid"`
+	// Queue is the queue name
+	Queue string `json:"queue" msgpack:"queue" mapstructure:"queue"`
 }

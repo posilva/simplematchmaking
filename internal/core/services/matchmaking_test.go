@@ -24,7 +24,7 @@ func TestMatchmakingService_FindMatch(t *testing.T) {
 	mmMock.EXPECT().AddPlayer(ctx, gomock.Any()).Return(nil)
 	repoMock.EXPECT().ReservePlayerSlot(
 		ctx, "player1", "queue1", gomock.Any()).Return(true, nil)
-	repoMock.EXPECT().UpdateTicketStatus(gomock.Any(), gomock.Any()).Return(nil)
+	repoMock.EXPECT().UpdateTicket(gomock.Any(), gomock.Any()).Return(nil)
 
 	s := NewMatchmakingService(
 		log,

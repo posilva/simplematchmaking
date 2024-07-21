@@ -30,14 +30,18 @@ type MatchmakingService interface {
 	CancelMatch(ctx context.Context, ticketID string) error
 }
 
-// Repository defines the interface to handle with
+// Repository defines the interface to handle with data to be stored/retrieved
 type Repository interface {
 	// ReservePlayerSlot reserves a player slot in the queue
 	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error)
+	// DeletePlayerSlot deletes a player slot in the queue
+	DeletePlayerSlot(ctx context.Context, playerID string, slot string) error
 	// UpdateTicket updates the ticket status
-	UpdateTicketStatus(ctx context.Context, status domain.TicketStatus) error
-	// GetTicketStatus gets the ticket status
-	GetTicketStatus(ctx context.Context, ticketID string) (domain.TicketStatus, error)
+	UpdateTicket(ctx context.Context, status domain.TicketStatus) error
+	// GetTicket gets the ticket status
+	GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
+	// DeleteTicket deletes the ticket status
+	DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
 }
 
 // Logger defines a basic logger interface

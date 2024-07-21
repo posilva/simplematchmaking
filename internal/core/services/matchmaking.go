@@ -53,9 +53,10 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 		Timestamp: now,
 		State:     domain.TicketStateQueued,
 		PlayerID:  p.ID,
+		Queue:     queue,
 	}
 
-	err = s.repository.UpdateTicketStatus(ctx, status)
+	err = s.repository.UpdateTicket(ctx, status)
 	if err != nil {
 		s.logger.Error("Failed to update ticket", err)
 		return domain.Ticket{}, fmt.Errorf("failed to update ticket: %v", err)
@@ -68,16 +69,31 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 
 // CheckMatch gets a match given a ticket ID
 func (s *MatchmakingService) CheckMatch(ctx context.Context, ticketID string) (domain.Match, error) {
-	_ = ticketID
-	s.logger.Info("Match found", "ticketID", ticketID)
-	return domain.Match{
-		ID: "match1",
-	}, nil
+	ticket, err := s.repository.GetTicket(ctx, ticketID)
+	if err != nil {
+		s.logger.Error("Failed to get ticket status", err)
+		return domain.Match{}, fmt.Errorf("failed to get ticket status: %v", err)
+	}
+	if ticket.State == domain.TicketStateMatched {
+		return domain.Match{
+			ID: ticket.MatchID,
+		}, nil
+	}
+	return domain.Match{}, ErrMatchNotFound
 }
 
 // CancelMatch cancels a match given a ticket ID
 func (s *MatchmakingService) CancelMatch(ctx context.Context, ticketID string) error {
-	_ = ticketID
-	s.logger.Info("Match canceled", "ticketID", ticketID)
+	// if there is failure in the middle of the process, the slot will be stuck in the queue for x amount of time as it should expire
+	ticketStatus, err := s.repository.DeleteTicket(ctx, ticketID)
+	if err != nil {
+		s.logger.Error("Failed to delete ticket", err, "ticketID", ticketID)
+		return fmt.Errorf("failed to delete ticket status: %v", err)
+	}
+	err = s.repository.DeletePlayerSlot(ctx, ticketStatus.PlayerID, ticketStatus.Queue)
+	if err != nil {
+		s.logger.Error("Failed to delete reservation", err, "ticketID", ticketID)
+		return fmt.Errorf("failed to delete reservation: %v", err)
+	}
 	return nil
 }
