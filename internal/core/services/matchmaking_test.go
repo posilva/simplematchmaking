@@ -21,6 +21,7 @@ func TestMatchmakingService_FindMatch(t *testing.T) {
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
 
+	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
 	mmMock.EXPECT().AddPlayer(ctx, gomock.Any()).Return(nil)
 	repoMock.EXPECT().ReservePlayerSlot(
 		ctx, "player1", "queue1", gomock.Any()).Return(true, nil)
@@ -48,6 +49,7 @@ func TestMatchmakingService_FindMatch_Exist(t *testing.T) {
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
 
+	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
 	repoMock.EXPECT().ReservePlayerSlot(
 		ctx, "player1", "queue1", gomock.Any()).Return(false, nil)
 
@@ -72,6 +74,7 @@ func TestMatchmakingService_FindMatch_Error(t *testing.T) {
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
 
+	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
 	repoMock.EXPECT().ReservePlayerSlot(
 		ctx, "player1", "queue1", gomock.Any()).Return(false, fmt.Errorf("any error"))
 	s := NewMatchmakingService(

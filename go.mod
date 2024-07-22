@@ -8,10 +8,12 @@ require (
 	github.com/carlmjohnson/requests v0.23.5
 	github.com/docker/docker v26.1.3+incompatible
 	github.com/gin-gonic/gin v1.9.1
+	github.com/go-co-op/gocron v1.37.0
 	github.com/google/uuid v1.6.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
-	github.com/redis/rueidis v1.0.34
-	github.com/redis/rueidis/mock v1.0.34
+	github.com/pkg/errors v0.9.1
+	github.com/redis/rueidis v1.0.41
+	github.com/redis/rueidis/mock v1.0.41
 	github.com/rs/zerolog v1.32.0
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.0
@@ -82,9 +84,9 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect

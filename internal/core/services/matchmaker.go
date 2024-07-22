@@ -5,20 +5,27 @@ import (
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
 	"github.com/posilva/simplematchmaking/internal/core/ports"
+	"github.com/segmentio/ksuid"
 )
 
 // Matchmaker is the Matchmaker implementation using
 type Matchmaker struct {
-	queue  ports.Queue
-	config domain.MatchmakerConfig
+	queue              ports.Queue
+	config             domain.MatchmakerConfig
+	scheduler          *Scheduler
+	logger             ports.Logger
+	matchResultHandler ports.MatchResultHandler
 }
 
 // NewMatchmaker creates a new Matchmaker
-func NewMatchmaker(queue ports.Queue, cfg domain.MatchmakerConfig) (*Matchmaker, error) {
-	return &Matchmaker{
+func NewMatchmaker(queue ports.Queue, cfg domain.MatchmakerConfig, logger ports.Logger) (*Matchmaker, error) {
+	mm := &Matchmaker{
 		queue:  queue,
 		config: cfg,
-	}, nil
+		logger: logger,
+	}
+	mm.scheduler = NewScheduler(cfg.IntervalSecs, mm.Matchmake)
+	return mm, nil
 }
 
 // AddPlayer adds a player to the matchmaker
@@ -26,12 +33,21 @@ func (m *Matchmaker) AddPlayer(ctx context.Context, p domain.Player) error {
 	return m.queue.AddPlayer(ctx, p)
 }
 
-// Match finds a match
-func (m *Matchmaker) Match(ctx context.Context) (domain.MatchResult, error) {
-	return domain.MatchResult{
-		Match: domain.Match{
-			ID: "match1",
-		},
-		Tickets: []domain.Ticket{{ID: "ticket1"}, {ID: "ticket2"}},
-	}, nil
+// Matchmake finds a match
+func (m *Matchmaker) Matchmake() {
+	ctx := context.Background()
+	matchID := ksuid.New().String()
+	mr, err := m.queue.Make(ctx, matchID)
+	if err != nil {
+		m.logger.Error("failed to make match: %v", err, m.queue.Name())
+		return
+	}
+	if m.matchResultHandler != nil {
+		m.matchResultHandler.HandleMatchResult(mr)
+	}
+}
+
+// Subscribe subscribes to match results
+func (m *Matchmaker) Subscribe(handler ports.MatchResultHandler) {
+	m.matchResultHandler = handler
 }

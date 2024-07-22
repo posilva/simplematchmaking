@@ -16,6 +16,7 @@ import (
 	"github.com/posilva/simplematchmaking/internal/core/services"
 )
 
+// Run starts the application
 func Run() {
 	r := gin.Default()
 
@@ -50,16 +51,18 @@ func createService() (*services.MatchmakingService, error) {
 	}
 
 	mmCfg := domain.MatchmakerConfig{
-		MaxPlayers: 2,
+		MaxPlayers:   2,
+		Name:         "main",
+		IntervalSecs: 2,
 	}
-	queue := queues.NewRedisQueue(rc, "main")
-	mm, err := services.NewMatchmaker(queue, mmCfg)
+	queue := queues.NewRedisQueue(rc, "global")
+	mm, err := services.NewMatchmaker(queue, mmCfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matchmaker: %v", err)
 	}
 
 	codec := codecs.NewMsgPackCodec()
-	repo := repository.NewRedisRepository(rc, codec)
+	repo := repository.NewRedisRepository(rc, codec, logger)
 
 	return services.NewMatchmakingService(logger, repo, mm), nil
 }

@@ -31,7 +31,8 @@ func TestReservePlayerSlotOK(t *testing.T) {
 	)
 
 	codec := mocks.NewMockCodec(ctrl)
-	repo := NewRedisRepository(clt, codec)
+	logger := mocks.NewMockLogger(ctrl)
+	repo := NewRedisRepository(clt, codec, logger)
 
 	ok, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
 	assert.NoError(t, err)
@@ -58,7 +59,8 @@ func TestReservePlayerSlotExistsError(t *testing.T) {
 	)
 
 	codec := mocks.NewMockCodec(ctrl)
-	repo := NewRedisRepository(clt, codec)
+	logger := mocks.NewMockLogger(ctrl)
+	repo := NewRedisRepository(clt, codec, logger)
 
 	ok, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
 	assert.NoError(t, err)
@@ -85,7 +87,8 @@ func TestReservePlayerSlotError(t *testing.T) {
 		mock.ErrorResult(fmt.Errorf(errMsg)),
 	)
 	codec := mocks.NewMockCodec(ctrl)
-	repo := NewRedisRepository(clt, codec)
+	logger := mocks.NewMockLogger(ctrl)
+	repo := NewRedisRepository(clt, codec, logger)
 
 	ok, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
 	assert.ErrorContains(t, err, errMsg)

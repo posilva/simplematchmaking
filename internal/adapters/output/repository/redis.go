@@ -21,13 +21,15 @@ var (
 type RedisRepository struct {
 	client rueidis.Client
 	codec  ports.Codec
+	logger ports.Logger
 }
 
 // NewRedisRepository creates a new RedisRepository
-func NewRedisRepository(client rueidis.Client, codec ports.Codec) *RedisRepository {
+func NewRedisRepository(client rueidis.Client, codec ports.Codec, logger ports.Logger) *RedisRepository {
 	return &RedisRepository{
 		client: client,
 		codec:  codec,
+		logger: logger,
 	}
 }
 

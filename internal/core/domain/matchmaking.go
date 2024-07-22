@@ -50,10 +50,8 @@ type MatchmakerConfig struct {
 	Name string `json:"name" msgpack:"name" mapstructure:"name"`
 	// MaxPlayers is the maximum number of players in a match
 	MaxPlayers int `json:"maxPlayers" msgpack:"maxPlayers" mapstructure:"maxPlayers"`
-	// Interval is the matchmaker interval
-	Interval int `json:"interval" msgpack:"interval" mapstructure:"interval"`
-	// Queue is the matchmaker queue
-	Queue string `json:"queue" msgpack:"queue" mapstructure:"queue"`
+	// IntervalSecs is the matchmaker interval
+	IntervalSecs int `json:"intervalSecs" msgpack:"intervalSecs" mapstructure:"intervalSecs"`
 }
 
 // TicketStatus represents the data of a ticket saved in the repository

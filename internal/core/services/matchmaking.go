@@ -19,11 +19,32 @@ type MatchmakingService struct {
 
 // NewMatchmakingService creates a new MatchmakingService
 func NewMatchmakingService(logger ports.Logger, repo ports.Repository, mm ports.Matchmaker) *MatchmakingService {
-	return &MatchmakingService{
+	srv := &MatchmakingService{
 		logger:     logger,
 		matchmaker: mm,
 		repository: repo,
 	}
+
+	mm.Subscribe(srv)
+	return srv
+}
+
+// HandleMatchResult handles the match result
+func (s *MatchmakingService) HandleMatchResult(match domain.MatchResult) error {
+	now := time.Now().UTC().Unix()
+	for _, t := range match.Tickets {
+		s.logger.Info("Match result: Updating ticket", "ticketID", t.ID, "matchID", match.Match.ID)
+		err := s.repository.UpdateTicket(context.Background(), domain.TicketStatus{
+			ID:        t.ID,
+			Timestamp: now,
+			State:     domain.TicketStateMatched,
+			MatchID:   match.Match.ID,
+		})
+		if err != nil {
+			s.logger.Error("Failed to update ticket", err, "ticketID", t.ID, "matchID", match.Match.ID)
+		}
+	}
+	return nil
 }
 
 // FindMatch finds a match given a player
@@ -84,7 +105,8 @@ func (s *MatchmakingService) CheckMatch(ctx context.Context, ticketID string) (d
 
 // CancelMatch cancels a match given a ticket ID
 func (s *MatchmakingService) CancelMatch(ctx context.Context, ticketID string) error {
-	// if there is failure in the middle of the process, the slot will be stuck in the queue for x amount of time as it should expire
+	// if there is failure in the middle of the process, the slot will be stuck in the queue
+	// for x amount of time as it should expire
 	ticketStatus, err := s.repository.DeleteTicket(ctx, ticketID)
 	if err != nil {
 		s.logger.Error("Failed to delete ticket", err, "ticketID", ticketID)
