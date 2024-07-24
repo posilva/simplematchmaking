@@ -93,18 +93,28 @@ func (m *MockMatchResultHandler) EXPECT() *MockMatchResultHandlerMockRecorder {
 	return m.recorder
 }
 
-// HandleMatchResult mocks base method.
-func (m *MockMatchResultHandler) HandleMatchResult(match domain.MatchResult) error {
+// HandleMatchResultError mocks base method.
+func (m *MockMatchResultHandler) HandleMatchResultError(err error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HandleMatchResult", match)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "HandleMatchResultError", err)
 }
 
-// HandleMatchResult indicates an expected call of HandleMatchResult.
-func (mr *MockMatchResultHandlerMockRecorder) HandleMatchResult(match any) *gomock.Call {
+// HandleMatchResultError indicates an expected call of HandleMatchResultError.
+func (mr *MockMatchResultHandlerMockRecorder) HandleMatchResultError(err any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResult", reflect.TypeOf((*MockMatchResultHandler)(nil).HandleMatchResult), match)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultError", reflect.TypeOf((*MockMatchResultHandler)(nil).HandleMatchResultError), err)
+}
+
+// HandleMatchResultOK mocks base method.
+func (m *MockMatchResultHandler) HandleMatchResultOK(match domain.MatchResult) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "HandleMatchResultOK", match)
+}
+
+// HandleMatchResultOK indicates an expected call of HandleMatchResultOK.
+func (mr *MockMatchResultHandlerMockRecorder) HandleMatchResultOK(match any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultOK", reflect.TypeOf((*MockMatchResultHandler)(nil).HandleMatchResultOK), match)
 }
 
 // MockMatchmaker is a mock of Matchmaker interface.
@@ -369,10 +379,10 @@ func (mr *MockRepositoryMockRecorder) GetTicket(ctx, ticketID any) *gomock.Call 
 }
 
 // ReservePlayerSlot mocks base method.
-func (m *MockRepository) ReservePlayerSlot(ctx context.Context, playerID, slot, ticketID string) (bool, error) {
+func (m *MockRepository) ReservePlayerSlot(ctx context.Context, playerID, slot, ticketID string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReservePlayerSlot", ctx, playerID, slot, ticketID)
-	ret0, _ := ret[0].(bool)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

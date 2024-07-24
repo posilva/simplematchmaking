@@ -29,8 +29,13 @@ func NewMatchmakingService(logger ports.Logger, repo ports.Repository, mm ports.
 	return srv
 }
 
-// HandleMatchResult handles the match result
-func (s *MatchmakingService) HandleMatchResult(match domain.MatchResult) error {
+// HandleMatchResultError handles the match result error
+func (s *MatchmakingService) HandleMatchResultError(err error) {
+	s.logger.Error("Match result error received", err)
+}
+
+// HandleMatchResultOK handles the match result
+func (s *MatchmakingService) HandleMatchResultOK(match domain.MatchResult) {
 	now := time.Now().UTC().Unix()
 	for _, t := range match.Tickets {
 		s.logger.Info("Match result: Updating ticket", "ticketID", t.ID, "matchID", match.Match.ID)
@@ -44,7 +49,6 @@ func (s *MatchmakingService) HandleMatchResult(match domain.MatchResult) error {
 			s.logger.Error("Failed to update ticket", err, "ticketID", t.ID, "matchID", match.Match.ID)
 		}
 	}
-	return nil
 }
 
 // FindMatch finds a match given a player
@@ -53,14 +57,16 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 	now := time.Now().UTC().Unix()
 
 	// check if the player is already in the queue
-	ok, err := s.repository.ReservePlayerSlot(ctx, p.ID, queue, ticketID)
+	ticketIDReserved, err := s.repository.ReservePlayerSlot(ctx, p.ID, queue, ticketID)
 	if err != nil {
 		s.logger.Error("Failed to reserve player slot", err)
 		return domain.Ticket{}, fmt.Errorf("failed to reserve player slot: %v", err)
 	}
-	if !ok {
-		s.logger.Info("Player already in the queue", "queue", queue, "player", p)
-		return domain.Ticket{}, fmt.Errorf("player already in the queue")
+	if ticketIDReserved != "" && ticketIDReserved != ticketID {
+		s.logger.Info("Player already in the queue", "queue", queue, "player", p, "existingticketID", ticketIDReserved, "newticketID", ticketID)
+		return domain.Ticket{
+			ID: ticketIDReserved,
+		}, nil
 	}
 
 	err = s.matchmaker.AddPlayer(ctx, p)

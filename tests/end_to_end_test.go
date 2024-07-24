@@ -35,14 +35,6 @@ func (suite *E2ETestSuite) TearDownSuite() {
 	teardown(&suite.BaseTestSuite)
 }
 
-func (suite *E2ETestSuite) TestFindMatch() {
-	resp, err := findMatchRequest()
-	suite.Require().NoError(err)
-	var out handler.FindMatchOutput
-	err = json.Unmarshal([]byte(resp), &out)
-	suite.Require().NoError(err)
-	suite.Require().Regexp(regexp.MustCompile("^[a-zA-Z0-9]{27}$"), out.TicketID)
-}
 func (suite *E2ETestSuite) TestCheckMatch() {
 	fmResp, err := findMatchRequest()
 	suite.Require().NoError(err)
@@ -50,7 +42,6 @@ func (suite *E2ETestSuite) TestCheckMatch() {
 	err = json.Unmarshal([]byte(fmResp), &fmOut)
 	suite.Require().NoError(err)
 	suite.Require().Regexp(regexp.MustCompile("^[a-zA-Z0-9]{27}$"), fmOut.TicketID)
-	fmt.Println("ticketID: ", fmOut.TicketID)
 	_, err = getMatchRequest(fmOut.TicketID, http.StatusNotFound)
 	suite.Require().NoError(err)
 }

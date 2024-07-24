@@ -14,7 +14,8 @@ type Codec interface {
 
 // MatchResultHandler defines the interface to handle match results
 type MatchResultHandler interface {
-	HandleMatchResult(match domain.MatchResult) error
+	HandleMatchResultOK(match domain.MatchResult)
+	HandleMatchResultError(err error)
 }
 
 // Matchmaker defines the Matchmaker interface
@@ -41,7 +42,7 @@ type MatchmakingService interface {
 // Repository defines the interface to handle with data to be stored/retrieved
 type Repository interface {
 	// ReservePlayerSlot reserves a player slot in the queue
-	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error)
+	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (string, error)
 	// DeletePlayerSlot deletes a player slot in the queue
 	DeletePlayerSlot(ctx context.Context, playerID string, slot string) error
 	// UpdateTicket updates the ticket status

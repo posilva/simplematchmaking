@@ -40,10 +40,11 @@ func (m *Matchmaker) Matchmake() {
 	mr, err := m.queue.Make(ctx, matchID)
 	if err != nil {
 		m.logger.Error("failed to make match: %v", err, m.queue.Name())
+		m.matchResultHandler.HandleMatchResultError(err)
 		return
 	}
 	if m.matchResultHandler != nil {
-		m.matchResultHandler.HandleMatchResult(mr)
+		m.matchResultHandler.HandleMatchResultOK(mr)
 	}
 }
 

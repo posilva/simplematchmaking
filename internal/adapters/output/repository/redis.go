@@ -4,6 +4,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
@@ -34,20 +35,33 @@ func NewRedisRepository(client rueidis.Client, codec ports.Codec, logger ports.L
 }
 
 // ReservePlayerSlot reserves a player slot in the queue
-func (r *RedisRepository) ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error) {
+func (r *RedisRepository) ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (string, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
 	key := r.playerSlotKey(slot, playerID)
 	value := "status:reserved:ticket:" + ticketID
-	cmd := r.client.B().Set().Key(key).Value(value).Nx().ExSeconds(reservationTimeEx).Build()
-	resp, err := r.client.Do(ctxWithTimeout, cmd).AsBool()
+	cmdSET := r.client.B().Set().Key(key).Value(value).Nx().ExSeconds(reservationTimeEx).Build()
+	cmdGET := r.client.B().Get().Key(key).Build()
+	resp := r.client.DoMulti(ctxWithTimeout, cmdSET, cmdGET)
+	_, err := resp[0].AsBool()
 	if err != nil {
+		// if redis returns nil it means it already existed
 		if !rueidis.IsRedisNil(err) {
-			return resp, fmt.Errorf("failed to reserve player slot: '%v'  %v", slot, err)
+			return "", fmt.Errorf("failed to reserve player slot[SET]: '%v'  %v", slot, err)
 		}
 	}
-	return resp, nil
+	respGET, err := resp[1].AsBytes()
+	if err != nil {
+		if !rueidis.IsRedisNil(err) {
+			return "", fmt.Errorf("failed to reserve player slot[GET]: '%v'  %v", slot, err)
+		}
+		return "", fmt.Errorf("something odd happened [GET] did returned 'nil' after SET: '%v'  %v", slot, err)
+	}
+	vGet := string(respGET)
+	vGetTargetID := strings.Replace(vGet, "status:reserved:ticket:", "", -1)
+
+	return vGetTargetID, nil
 }
 
 // DeletePlayerSlot deletes a player slot in the queue
