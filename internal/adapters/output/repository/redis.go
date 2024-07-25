@@ -3,6 +3,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -48,15 +49,16 @@ func (r *RedisRepository) ReservePlayerSlot(ctx context.Context, playerID string
 	if err != nil {
 		// if redis returns nil it means it already existed
 		if !rueidis.IsRedisNil(err) {
-			return "", fmt.Errorf("failed to reserve player slot[SET]: '%v'  %v", slot, err)
+			return "", errors.Join(ErrFailedToReservePlayerSlot, fmt.Errorf(" [SET] slot: '%v'  %v", slot, err))
 		}
 	}
 	respGET, err := resp[1].AsBytes()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return "", fmt.Errorf("failed to reserve player slot[GET]: '%v'  %v", slot, err)
+			return "", errors.Join(ErrFailedToReservePlayerSlot, fmt.Errorf(" [GET] slot: '%v'  %v", slot, err))
 		}
-		return "", fmt.Errorf("something odd happened [GET] did returned 'nil' after SET: '%v'  %v", slot, err)
+		return "", errors.Join(ErrSomethingOddHappened, fmt.Errorf("[GET] did returned 'nil' after SET: '%v'  %v", slot, err))
+
 	}
 	vGet := string(respGET)
 	vGetTargetID := strings.Replace(vGet, "status:reserved:ticket:", "", -1)
@@ -82,7 +84,7 @@ func (r *RedisRepository) UpdateTicket(ctx context.Context, status domain.Ticket
 	key := r.ticketKey(status.ID)
 	value, err := r.codec.Encode(status)
 	if err != nil {
-		return fmt.Errorf("failed to encode ticket %v", err)
+		return errors.Join(ErrFailedToEncodeTicket, err)
 	}
 
 	// TODO: this should have a TTL
@@ -90,9 +92,9 @@ func (r *RedisRepository) UpdateTicket(ctx context.Context, status domain.Ticket
 	err = r.client.Do(ctxWithTimeout, cmd).Error()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return fmt.Errorf("failed to update ticket %v", err)
+			return errors.Join(ErrFailedToUpdateTicket, err)
 		}
-		return fmt.Errorf("ticket not found: %v", err)
+		return errors.Join(ErrTicketNotFound, err)
 	}
 	return nil
 }
@@ -107,15 +109,15 @@ func (r *RedisRepository) GetTicket(ctx context.Context, ticketID string) (domai
 	resp, err := r.client.Do(ctxWithTimeout, cmd).AsBytes()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return domain.TicketStatus{}, fmt.Errorf("failed to get ticket %v", err)
+			return domain.TicketStatus{}, errors.Join(ErrFailedToGetTicket, err)
 		}
-		return domain.TicketStatus{}, fmt.Errorf("ticket not found: %v", err)
+		return domain.TicketStatus{}, errors.Join(ErrTicketNotFound, err)
 	}
 
 	var status domain.TicketStatus
 	err = r.codec.Decode([]byte(resp), &status)
 	if err != nil {
-		return domain.TicketStatus{}, fmt.Errorf("failed to decode ticket %v", err)
+		return domain.TicketStatus{}, errors.Join(ErrFailedToDecodeTicket, err)
 	}
 	return status, nil
 }
@@ -130,14 +132,15 @@ func (r *RedisRepository) DeleteTicket(ctx context.Context, ticketID string) (do
 	b, err := r.client.Do(ctxWithTimeout, cmd).AsBytes()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return domain.TicketStatus{}, fmt.Errorf("failed to delete ticket %v", err)
+			return domain.TicketStatus{}, errors.Join(ErrFailedToDeleteTicket, err)
+
 		}
-		return domain.TicketStatus{}, fmt.Errorf("ticket not found: %v", err)
+		return domain.TicketStatus{}, errors.Join(ErrTicketNotFound, err)
 	}
 	var status domain.TicketStatus
 	err = r.codec.Decode(b, &status)
 	if err != nil {
-		return domain.TicketStatus{}, fmt.Errorf("failed to decode ticket %v", err)
+		return domain.TicketStatus{}, errors.Join(ErrFailedToDecodeTicket, err)
 	}
 	return status, nil
 }

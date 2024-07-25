@@ -47,7 +47,6 @@ func (q *RedisQueue) AddPlayer(ctx context.Context, p domain.Player) error {
 
 // Make finds a match
 func (q *RedisQueue) Make(ctx context.Context, matchID string) (domain.MatchResult, error) {
-	// acquire the lock "my_lock"
 	ctxLock, cancel, err := q.locker.WithContext(ctx, q.name+":lock")
 	if err != nil {
 		return domain.MatchResult{}, err

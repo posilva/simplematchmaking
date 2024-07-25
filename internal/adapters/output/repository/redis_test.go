@@ -109,7 +109,7 @@ func TestReservePlayerSlotErrorSET(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	tID, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
-	require.ErrorContains(t, err, "failed to reserve player slot[SET]")
+	require.ErrorContains(t, err, ErrFailedToReservePlayerSlot.Error())
 	require.Empty(t, tID)
 
 }
@@ -141,7 +141,7 @@ func TestReservePlayerSlotErrorGET(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	tID, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
-	require.ErrorContains(t, err, "failed to reserve player slot[GET]")
+	require.ErrorContains(t, err, ErrFailedToReservePlayerSlot.Error())
 	require.Empty(t, tID)
 
 }
@@ -173,7 +173,7 @@ func TestReservePlayerSlotErrorNeverHappens(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	tID, err := repo.ReservePlayerSlot(ctx, playerID, slot, ticketID)
-	require.ErrorContains(t, err, "something odd happened")
+	require.ErrorContains(t, err, ErrSomethingOddHappened.Error())
 	require.Empty(t, tID)
 
 }
@@ -243,7 +243,7 @@ func TestGetTicket_NotFound(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	_, err := repo.GetTicket(context.Background(), tID)
-	require.ErrorContains(t, err, "ticket not found")
+	require.ErrorContains(t, err, ErrTicketNotFound.Error())
 }
 
 func TestGetTicket_Error(t *testing.T) {
@@ -263,7 +263,7 @@ func TestGetTicket_Error(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	_, err := repo.GetTicket(context.Background(), tID)
-	require.ErrorContains(t, err, "failed to get ticket")
+	require.ErrorContains(t, err, ErrFailedToGetTicket.Error())
 }
 
 func TestGetTicket_ErrorDecode(t *testing.T) {
@@ -285,7 +285,7 @@ func TestGetTicket_ErrorDecode(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	_, err := repo.GetTicket(context.Background(), tID)
-	require.ErrorContains(t, err, "failed to decode ticket")
+	require.ErrorContains(t, err, ErrFailedToDecodeTicket.Error())
 }
 
 func TestDeleteTicket(t *testing.T) {
@@ -336,7 +336,7 @@ func TestDeleteTicket_Error(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 	_, err := repo.DeleteTicket(context.Background(), tID)
 
-	require.ErrorContains(t, err, "ticket not found")
+	require.ErrorContains(t, err, ErrTicketNotFound.Error())
 }
 
 func TestDeleteTicket_NotFound(t *testing.T) {
@@ -358,7 +358,7 @@ func TestDeleteTicket_NotFound(t *testing.T) {
 
 	_, err := repo.DeleteTicket(context.Background(), tID)
 
-	require.ErrorContains(t, err, "failed to delete ticket")
+	require.ErrorContains(t, err, ErrFailedToDeleteTicket.Error())
 
 }
 
@@ -380,7 +380,7 @@ func TestDeleteTicket_ErrorDecode(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 	_, err := repo.DeleteTicket(context.Background(), tID)
 
-	require.ErrorContains(t, err, "failed to decode ticket")
+	require.ErrorContains(t, err, ErrFailedToDecodeTicket.Error())
 }
 
 func TestUpdateTicket(t *testing.T) {
@@ -430,7 +430,7 @@ func TestUpdateTicket_ErrorEncode(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	err := repo.UpdateTicket(context.Background(), ticketSt)
-	require.ErrorContains(t, err, "failed to encode ticket")
+	require.ErrorContains(t, err, ErrFailedToEncodeTicket.Error())
 }
 
 func TestUpdateTicket_Error(t *testing.T) {
@@ -460,7 +460,7 @@ func TestUpdateTicket_Error(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	err = repo.UpdateTicket(context.Background(), ticketSt)
-	require.ErrorContains(t, err, "failed to update ticket")
+	require.ErrorContains(t, err, ErrFailedToUpdateTicket.Error())
 }
 
 func TestUpdateTicket_NotFound(t *testing.T) {
@@ -490,5 +490,5 @@ func TestUpdateTicket_NotFound(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	err = repo.UpdateTicket(context.Background(), ticketSt)
-	require.ErrorContains(t, err, "ticket not found")
+	require.ErrorContains(t, err, ErrTicketNotFound.Error())
 }
