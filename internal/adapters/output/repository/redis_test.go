@@ -314,7 +314,6 @@ func TestDeleteTicket(t *testing.T) {
 	repo := NewRedisRepository(clt, codec, logger)
 
 	st, err := repo.DeleteTicket(context.Background(), tID)
-	fmt.Println("Status:", st)
 	require.NoError(t, err)
 	require.Equal(t, st.ID, ticketSt.ID)
 }
