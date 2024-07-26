@@ -77,12 +77,12 @@ func (r *RedisRepository) DeletePlayerSlot(ctx context.Context, playerID string,
 }
 
 // UpdateTicket updates the ticket status
-func (r *RedisRepository) UpdateTicket(ctx context.Context, status domain.TicketStatus) error {
+func (r *RedisRepository) UpdateTicket(ctx context.Context, ticket domain.TicketRecord) error {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
-	key := r.ticketKey(status.ID)
-	value, err := r.codec.Encode(status)
+	key := r.ticketKey(ticket.ID)
+	value, err := r.codec.Encode(ticket)
 	if err != nil {
 		return errors.Join(ErrFailedToEncodeTicket, err)
 	}
@@ -100,7 +100,7 @@ func (r *RedisRepository) UpdateTicket(ctx context.Context, status domain.Ticket
 }
 
 // GetTicket gets the ticket status
-func (r *RedisRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (r *RedisRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
@@ -109,21 +109,21 @@ func (r *RedisRepository) GetTicket(ctx context.Context, ticketID string) (domai
 	resp, err := r.client.Do(ctxWithTimeout, cmd).AsBytes()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return domain.TicketStatus{}, errors.Join(ErrFailedToGetTicket, err)
+			return domain.TicketRecord{}, errors.Join(ErrFailedToGetTicket, err)
 		}
-		return domain.TicketStatus{}, errors.Join(ErrTicketNotFound, err)
+		return domain.TicketRecord{}, errors.Join(ErrTicketNotFound, err)
 	}
 
-	var status domain.TicketStatus
+	var status domain.TicketRecord
 	err = r.codec.Decode([]byte(resp), &status)
 	if err != nil {
-		return domain.TicketStatus{}, errors.Join(ErrFailedToDecodeTicket, err)
+		return domain.TicketRecord{}, errors.Join(ErrFailedToDecodeTicket, err)
 	}
 	return status, nil
 }
 
 // DeleteTicket deletes the ticket status
-func (r *RedisRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (r *RedisRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
@@ -132,15 +132,15 @@ func (r *RedisRepository) DeleteTicket(ctx context.Context, ticketID string) (do
 	b, err := r.client.Do(ctxWithTimeout, cmd).AsBytes()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return domain.TicketStatus{}, errors.Join(ErrFailedToDeleteTicket, err)
+			return domain.TicketRecord{}, errors.Join(ErrFailedToDeleteTicket, err)
 
 		}
-		return domain.TicketStatus{}, errors.Join(ErrTicketNotFound, err)
+		return domain.TicketRecord{}, errors.Join(ErrTicketNotFound, err)
 	}
-	var status domain.TicketStatus
+	var status domain.TicketRecord
 	err = r.codec.Decode(b, &status)
 	if err != nil {
-		return domain.TicketStatus{}, errors.Join(ErrFailedToDecodeTicket, err)
+		return domain.TicketRecord{}, errors.Join(ErrFailedToDecodeTicket, err)
 	}
 	return status, nil
 }

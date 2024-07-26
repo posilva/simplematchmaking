@@ -54,8 +54,8 @@ type MatchmakerConfig struct {
 	IntervalSecs int `json:"intervalSecs" msgpack:"intervalSecs" mapstructure:"intervalSecs"`
 }
 
-// TicketStatus represents the data of a ticket saved in the repository
-type TicketStatus struct {
+// TicketRecord represents the data of a ticket saved in the repository
+type TicketRecord struct {
 	// ID is the ticket ID
 	ID string `json:"id" msgpack:"id" mapstructure:"id"`
 	// Timestamp is the state timestamp

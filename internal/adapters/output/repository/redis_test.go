@@ -293,7 +293,7 @@ func TestDeleteTicket(t *testing.T) {
 	defer ctrl.Finish()
 	clt := mock.NewClient(ctrl)
 	tID := testutil.NewID()
-	ticketSt := domain.TicketStatus{
+	ticketSt := domain.TicketRecord{
 		ID: tID,
 	}
 
@@ -307,7 +307,7 @@ func TestDeleteTicket(t *testing.T) {
 	decode := codec.EXPECT().Decode(gomock.Any(), gomock.Any())
 	decode.Do(
 		func(b []byte, v interface{}) error {
-			*v.(*domain.TicketStatus) = ticketSt
+			*v.(*domain.TicketRecord) = ticketSt
 			return nil
 		}).Return(nil)
 
@@ -387,7 +387,7 @@ func TestUpdateTicket(t *testing.T) {
 	defer ctrl.Finish()
 	clt := mock.NewClient(ctrl)
 	tID := testutil.NewID()
-	ticketSt := domain.TicketStatus{
+	ticketSt := domain.TicketRecord{
 		ID: tID,
 	}
 
@@ -417,7 +417,7 @@ func TestUpdateTicket_ErrorEncode(t *testing.T) {
 	defer ctrl.Finish()
 	clt := mock.NewClient(ctrl)
 	tID := testutil.NewID()
-	ticketSt := domain.TicketStatus{
+	ticketSt := domain.TicketRecord{
 		ID: tID,
 	}
 
@@ -437,7 +437,7 @@ func TestUpdateTicket_Error(t *testing.T) {
 	defer ctrl.Finish()
 	clt := mock.NewClient(ctrl)
 	tID := testutil.NewID()
-	ticketSt := domain.TicketStatus{
+	ticketSt := domain.TicketRecord{
 		ID: tID,
 	}
 
@@ -467,7 +467,7 @@ func TestUpdateTicket_NotFound(t *testing.T) {
 	defer ctrl.Finish()
 	clt := mock.NewClient(ctrl)
 	tID := testutil.NewID()
-	ticketSt := domain.TicketStatus{
+	ticketSt := domain.TicketRecord{
 		ID: tID,
 	}
 

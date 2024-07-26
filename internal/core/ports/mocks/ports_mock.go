@@ -349,10 +349,10 @@ func (mr *MockRepositoryMockRecorder) DeletePlayerSlot(ctx, playerID, slot any) 
 }
 
 // DeleteTicket mocks base method.
-func (m *MockRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (m *MockRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteTicket", ctx, ticketID)
-	ret0, _ := ret[0].(domain.TicketStatus)
+	ret0, _ := ret[0].(domain.TicketRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -364,10 +364,10 @@ func (mr *MockRepositoryMockRecorder) DeleteTicket(ctx, ticketID any) *gomock.Ca
 }
 
 // GetTicket mocks base method.
-func (m *MockRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (m *MockRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTicket", ctx, ticketID)
-	ret0, _ := ret[0].(domain.TicketStatus)
+	ret0, _ := ret[0].(domain.TicketRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -394,7 +394,7 @@ func (mr *MockRepositoryMockRecorder) ReservePlayerSlot(ctx, playerID, slot, tic
 }
 
 // UpdateTicket mocks base method.
-func (m *MockRepository) UpdateTicket(ctx context.Context, status domain.TicketStatus) error {
+func (m *MockRepository) UpdateTicket(ctx context.Context, status domain.TicketRecord) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateTicket", ctx, status)
 	ret0, _ := ret[0].(error)

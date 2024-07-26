@@ -39,7 +39,7 @@ func (s *MatchmakingService) HandleMatchResultOK(match domain.MatchResult) {
 	now := time.Now().UTC().Unix()
 	for _, t := range match.Tickets {
 		s.logger.Info("Match result: Updating ticket", "ticketID", t.ID, "matchID", match.Match.ID)
-		err := s.repository.UpdateTicket(context.Background(), domain.TicketStatus{
+		err := s.repository.UpdateTicket(context.Background(), domain.TicketRecord{
 			ID:        t.ID,
 			Timestamp: now,
 			State:     domain.TicketStateMatched,
@@ -75,7 +75,7 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 		return domain.Ticket{}, fmt.Errorf("failed to add player to the matchmaker: %v", err)
 	}
 
-	status := domain.TicketStatus{
+	status := domain.TicketRecord{
 		ID:        ticketID,
 		Timestamp: now,
 		State:     domain.TicketStateQueued,

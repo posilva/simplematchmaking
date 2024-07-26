@@ -46,11 +46,11 @@ type Repository interface {
 	// DeletePlayerSlot deletes a player slot in the queue
 	DeletePlayerSlot(ctx context.Context, playerID string, slot string) error
 	// UpdateTicket updates the ticket status
-	UpdateTicket(ctx context.Context, status domain.TicketStatus) error
+	UpdateTicket(ctx context.Context, ticket domain.TicketRecord) error
 	// GetTicket gets the ticket status
-	GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
+	GetTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error)
 	// DeleteTicket deletes the ticket status
-	DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
+	DeleteTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error)
 }
 
 // Logger defines a basic logger interface
