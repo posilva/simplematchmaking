@@ -2,79 +2,99 @@ package queues
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"slices"
 	"testing"
-	"time"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
 	"github.com/posilva/simplematchmaking/internal/testutil"
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/mock"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/exp/rand"
 )
 
-func TestRedisQueue_AddPlayer(t *testing.T) {
+func TestRedisQueue_Enqueue(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	entry := domain.QueueEntry{
+		TicketID: testutil.NewID(),
+		PlayerID: testutil.NewID(),
+		Ranking:  1,
+	}
+	bytes, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := "test"
 	client := mock.NewClient(ctrl)
+	v := fmt.Sprintf("%s$$%s", string(bytes), "test::0")
 	client.EXPECT().Do(gomock.Any(), mock.Match(
-		"ZADD", "ranking:test", "1", "player1")).Return(mock.Result(mock.RedisInt64(1)))
-	type fields struct {
-		client rueidis.Client
-		name   string
-	}
-	type args struct {
-		ctx context.Context
-		p   domain.Player
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Test AddPlayer",
-			fields: fields{
-				client: client,
-				name:   "test",
-			},
-			args: args{
-				ctx: context.Background(),
-				p: domain.Player{
-					ID:      "player1",
-					Ranking: 1,
-				},
-			},
-			wantErr: false,
+		"RPUSH", "test::0", v)).Return(mock.Result(mock.RedisInt64(1)))
+
+	q := &RedisQueue{
+		bracketInterval: 10,
+		keyPrefix:       name,
+		client:          client,
+		config: domain.QueueConfig{
+			Name:           name,
+			MaxPlayers:     2,
+			NrBrackets:     10,
+			MinRanking:     1,
+			MaxRanking:     100,
+			MakeIterations: 3,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			q := &RedisQueue{
-				client: tt.fields.client,
-				name:   tt.fields.name,
-			}
-			if err := q.AddPlayer(tt.args.ctx, tt.args.p); (err != nil) != tt.wantErr {
-				t.Errorf("RedisQueue.AddPlayer() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+	err = q.Enqueue(context.Background(), entry)
+	require.NoError(t, err)
+
 }
-
-func TestRedisQueue_Make(t *testing.T) {
-	p := domain.Player{
-		ID:      "player1",
-		Ranking: 79,
+func TestRedisQueue_Enqueue_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	entry := domain.QueueEntry{
+		TicketID: testutil.NewID(),
+		PlayerID: testutil.NewID(),
+		Ranking:  1,
 	}
+	bytes, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := "test"
+	client := mock.NewClient(ctrl)
+	v := fmt.Sprintf("%s$$%s", string(bytes), "test::0")
+	client.EXPECT().Do(gomock.Any(), mock.Match(
+		"RPUSH", "test::0", v)).Return(mock.ErrorResult(fmt.Errorf("error")))
 
+	q := &RedisQueue{
+		bracketInterval: 10,
+		keyPrefix:       name,
+		client:          client,
+		config: domain.QueueConfig{
+			Name:           name,
+			MaxPlayers:     2,
+			NrBrackets:     10,
+			MinRanking:     1,
+			MaxRanking:     100,
+			MakeIterations: 3,
+		},
+	}
+	err = q.Enqueue(context.Background(), entry)
+	require.ErrorContains(t, err, ErrFailedExecuteCommand.Error())
+
+}
+func TestRedisQueue_Make(t *testing.T) {
+	count := int64(8)
 	// player with ranking n
-	nrBrackets := 10
-	maxRanking := 100
+	maxPlayers := 1000
+	nrBrackets := 1000
+	maxRanking := 9999
+	minRanking := 1
 
 	bracketInterval := maxRanking / nrBrackets
-	slot := p.Ranking / bracketInterval
-	fmt.Println("slot", slot, "bracketInterval", bracketInterval)
 
 	client, err := rueidis.NewClient(rueidis.ClientOption{
 		InitAddress: []string{"localhost:6379"},
@@ -83,27 +103,83 @@ func TestRedisQueue_Make(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	key := fmt.Sprintf("test:list:%d", slot)
-	cmdPush := client.B().Rpush().Key(key).Element(testutil.NewID()).Build()
-	cmdPush2 := client.B().Rpush().Key(key).Element(testutil.NewID()).Build()
-	cmdPop := client.B().Lpop().Key(key).Count(2).Build()
-	cmdPop2 := client.B().Lpop().Key(key).Count(2).Build()
+	defer func() {
+		err := client.Do(context.Background(), client.B().Flushall().Build()).Error()
+		if err != nil {
+			t.Fatal(err)
+		}
+		client.Close()
+	}()
 
-	ctx, cancelMatchRequest := context.WithTimeout(context.Background(), time.Duration(1)*time.Second)
-	defer cancelMatchRequest()
-	err = client.Do(ctx, cmdPush).Error()
-	err = client.Do(context.Background(), cmdPush2).Error()
+	keyUnique := testutil.NewID()
 
-	if err != nil {
-		t.Fatal(err)
+	listOfKeys := make([]string, 0)
+	listOfUIDs := make([]string, 0)
+
+	// generate a list of maxPlayers
+	for i := 0; i < maxPlayers; i++ {
+		ranking := rand.Intn(maxRanking-minRanking) + minRanking
+		slot := ranking / bracketInterval
+		key := fmt.Sprintf("test:list:%s:%d", keyUnique, slot)
+		uid := testutil.NewID()
+		listOfKeys = append(listOfKeys, key)
+		listOfUIDs = append(listOfUIDs, uid)
+		cmdPush := client.B().Rpush().Key(key).Element(uid).Build()
+		err = client.Do(context.Background(), cmdPush).Error()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	r := client.DoMulti(context.Background(), cmdPop, cmdPop2)
-	for _, v := range r {
-		_, _ = v.AsStrSlice()
-		// fmt.Println("v:", e, a)
+	slices.Sort(listOfKeys)
+	remainingPlayers := make([]string, 0)
+	allMatched := make([]string, 0)
+
+	listOfKeys = slices.Compact(listOfKeys)
+
+	iterationSize := 3
+	iteration := 0
+	for {
+		keys := listOfKeys[iteration*iterationSize : (iteration+1)*iterationSize]
+		lAllKeys := len(keys)
+		if iteration*iterationSize >= len(listOfKeys) {
+			t.Logf("remaining players: %v", remainingPlayers)
+			break
+		}
+		for {
+			cmd := client.B().Lmpop().Numkeys(int64(lAllKeys)).Key(keys...).Left().Count(count).Build()
+			result, err := client.Do(context.Background(), cmd).AsMap()
+			if err != nil {
+				if rueidis.IsRedisNil(err) {
+
+					iteration++
+					break
+				}
+				t.Fatal(err)
+			}
+
+			for _, value := range result {
+				v, err := value.AsStrSlice()
+				if err != nil {
+					t.Fatal(err)
+				}
+				v = append(remainingPlayers, v...)
+				remainingPlayers = nil
+				if len(v) < int(count) {
+					remainingPlayers = append(remainingPlayers, v...)
+					break
+				}
+				for i := 0; i < len(v); i = i + int(count) {
+					if i <= len(v)-int(count) {
+						allMatched = append(allMatched, v[i]+":"+v[i+1])
+						//t.Logf("match between: %s ", v[i:i+int(count)])
+					} else {
+						remainingPlayers = v[i:]
+					}
+				}
+			}
+		}
 	}
 
-	// player with ranking n+1
-
+	require.Equal(t, len(allMatched), maxPlayers/int(count))
 }

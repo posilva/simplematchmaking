@@ -51,11 +51,17 @@ func createService() (*services.MatchmakingService, error) {
 	}
 
 	mmCfg := domain.MatchmakerConfig{
-		MaxPlayers:   2,
 		Name:         "main",
 		IntervalSecs: 2,
 	}
-	queue := queues.NewRedisQueue(rc, "global")
+	queue := queues.NewRedisQueue(rc, domain.QueueConfig{
+		MaxPlayers:     2,
+		NrBrackets:     10,
+		MinRanking:     1,
+		MaxRanking:     100,
+		MakeIterations: 3,
+		Name:           "global",
+	})
 	mm, err := services.NewMatchmaker(queue, mmCfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matchmaker: %v", err)

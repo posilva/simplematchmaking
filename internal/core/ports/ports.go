@@ -12,23 +12,23 @@ type Codec interface {
 	Decode(data []byte, v interface{}) error
 }
 
-// MatchResultHandler defines the interface to handle match results
-type MatchResultHandler interface {
-	HandleMatchResultOK(match domain.MatchResult)
-	HandleMatchResultError(err error)
+// MatchResultsListHandler defines the interface to handle match results
+type MatchResultsListHandler interface {
+	HandleMatchResultsOK(matches []domain.MatchResult)
+	HandleMatchResultsError(err error)
 }
 
 // Matchmaker defines the Matchmaker interface
 type Matchmaker interface {
 	Matchmake()
 	AddPlayer(ctx context.Context, p domain.Player) error
-	Subscribe(handler MatchResultHandler)
+	Subscribe(handler MatchResultsListHandler)
 }
 
 // Queue defines the Queue interface
 type Queue interface {
-	AddPlayer(ctx context.Context, p domain.Player) error
-	Make(ctx context.Context, matchID string) (domain.MatchResult, error)
+	Enqueue(ctx context.Context, qe domain.QueueEntry) error
+	Make(ctx context.Context) ([]domain.MatchResult, error)
 	Name() string
 }
 

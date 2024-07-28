@@ -29,24 +29,26 @@ func NewMatchmakingService(logger ports.Logger, repo ports.Repository, mm ports.
 	return srv
 }
 
-// HandleMatchResultError handles the match result error
-func (s *MatchmakingService) HandleMatchResultError(err error) {
+// HandleMatchResultsError handles the match result error
+func (s *MatchmakingService) HandleMatchResultsError(err error) {
 	s.logger.Error("Match result error received", err)
 }
 
-// HandleMatchResultOK handles the match result
-func (s *MatchmakingService) HandleMatchResultOK(match domain.MatchResult) {
+// HandleMatchResultsOK handles the match result
+func (s *MatchmakingService) HandleMatchResultsOK(matches []domain.MatchResult) {
 	now := time.Now().UTC().Unix()
-	for _, t := range match.Tickets {
-		s.logger.Info("Match result: Updating ticket", "ticketID", t.ID, "matchID", match.Match.ID)
-		err := s.repository.UpdateTicket(context.Background(), domain.TicketRecord{
-			ID:        t.ID,
-			Timestamp: now,
-			State:     domain.TicketStateMatched,
-			MatchID:   match.Match.ID,
-		})
-		if err != nil {
-			s.logger.Error("Failed to update ticket", err, "ticketID", t.ID, "matchID", match.Match.ID)
+	for _, match := range matches {
+		for _, t := range match.Tickets {
+			s.logger.Info("Match result: Updating ticket", "ticketID", t.ID, "matchID", match.Match.ID)
+			err := s.repository.UpdateTicket(context.Background(), domain.TicketRecord{
+				ID:        t.ID,
+				Timestamp: now,
+				State:     domain.TicketStateMatched,
+				MatchID:   match.Match.ID,
+			})
+			if err != nil {
+				s.logger.Error("Failed to update ticket", err, "ticketID", t.ID, "matchID", match.Match.ID)
+			}
 		}
 	}
 }
