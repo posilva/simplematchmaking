@@ -160,6 +160,151 @@ func TestRedisQueue_Make(t *testing.T) {
 
 }
 
+func TestRedisQueue_Make_LockError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	lockMock := mocks.NewMockLock(ctrl)
+	clientMock := mock.NewClient(ctrl)
+
+	codec := codecs.NewJSONCodec()
+
+	lockMock.EXPECT().Acquire(gomock.Any(), gomock.Any()).
+		Return(context.Background(), func() {
+			fmt.Println("lock was canceled by the test")
+		}, fmt.Errorf("lock error"))
+
+	q := NewRedisQueue(clientMock, queueConfig, codec, lockMock)
+	_, err := q.Make(context.Background())
+	require.ErrorContains(t, err, ErrFailedToAcquireLock.Error())
+
+}
+
+func TestRedisQueue_Make_ParseErrorStrSlice(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	lockMock := mocks.NewMockLock(ctrl)
+	clientMock := mock.NewClient(ctrl)
+
+	codec := codecs.NewJSONCodec()
+
+	lockMock.EXPECT().Acquire(gomock.Any(), "test:lock").
+		Return(context.Background(), func() {
+			fmt.Println("lock was canceled by the test")
+		}, nil)
+
+	_, entryS := queueEntry(t, codec)
+	_, entry2S := queueEntry(t, codec)
+
+	listResult := mock.Result(
+		mock.RedisMap(
+			mapResultNotStrSlice(entryS, entry2S),
+		))
+
+	nilResult := mock.Result(
+		mock.RedisNil(),
+	)
+
+	ct := 0
+	clientMock.EXPECT().
+		Do(gomock.Any(),
+			mock.MatchFn(
+				func(cmd []string) bool {
+					return true
+				}, "testing description of matcher fn",
+			)).AnyTimes().
+		DoAndReturn(func(ctx context.Context, cmd interface{}) rueidis.RedisResult {
+			ct++
+			if ct > 1 {
+				return nilResult
+			}
+
+			return listResult
+		})
+
+	q := NewRedisQueue(clientMock, queueConfig, codec, lockMock)
+	_, err := q.Make(context.Background())
+	require.ErrorContains(t, err, ErrFailedToParseValue.Error())
+
+}
+
+func TestRedisQueue_Make_ParseErrorParseEntry(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	lockMock := mocks.NewMockLock(ctrl)
+	clientMock := mock.NewClient(ctrl)
+
+	codec := codecs.NewJSONCodec()
+
+	lockMock.EXPECT().Acquire(gomock.Any(), "test:lock").
+		Return(context.Background(), func() {
+			fmt.Println("lock was canceled by the test")
+		}, nil)
+
+	_, entryS := queueEntry(t, codec)
+	_, entry2S := queueEntry(t, codec)
+
+	listResult := mock.Result(
+		mock.RedisMap(
+			mapResultNotParse(entryS, entry2S),
+		))
+
+	nilResult := mock.Result(
+		mock.RedisNil(),
+	)
+
+	ct := 0
+	clientMock.EXPECT().
+		Do(gomock.Any(),
+			mock.MatchFn(
+				func(cmd []string) bool {
+					return true
+				}, "testing description of matcher fn",
+			)).AnyTimes().
+		DoAndReturn(func(ctx context.Context, cmd interface{}) rueidis.RedisResult {
+			ct++
+			if ct > 1 {
+				return nilResult
+			}
+
+			return listResult
+		})
+
+	q := NewRedisQueue(clientMock, queueConfig, codec, lockMock)
+	_, err := q.Make(context.Background())
+	require.ErrorContains(t, err, ErrFailedToParseValue.Error())
+
+}
+func TestRedisQueue_Make_RedisError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	lockMock := mocks.NewMockLock(ctrl)
+	clientMock := mock.NewClient(ctrl)
+
+	codec := codecs.NewJSONCodec()
+
+	lockMock.EXPECT().Acquire(gomock.Any(), "test:lock").
+		Return(context.Background(), func() {
+			fmt.Println("lock was canceled by the test")
+		}, nil)
+
+	clientMock.EXPECT().
+		Do(gomock.Any(),
+			mock.MatchFn(
+				func(cmd []string) bool {
+					t.Log("redis command:", cmd)
+					return cmd[0] == "LMPOP"
+				}, "testing description of matcher fn",
+			)).AnyTimes().Return(mock.ErrorResult(fmt.Errorf("error")))
+
+	q := NewRedisQueue(clientMock, queueConfig, codec, lockMock)
+	_, err := q.Make(context.Background())
+	require.ErrorContains(t, err, ErrFailedExecuteCommand.Error())
+}
+
 func TestRedisQueue_MakeExperiment(t *testing.T) {
 
 	count := int64(8)
@@ -226,7 +371,6 @@ func TestRedisQueue_MakeExperiment(t *testing.T) {
 			result, err := client.Do(context.Background(), cmd).AsMap()
 			if err != nil {
 				if rueidis.IsRedisNil(err) {
-
 					iteration++
 					break
 				}
@@ -269,12 +413,31 @@ func queueEntry(t *testing.T, codec ports.Codec) (domain.QueueEntry, string) {
 	return entry, string(b)
 }
 
-func mapResult(entryS string, entry2S string) map[string]rueidis.RedisMessage {
+func mapResult(entries ...string) map[string]rueidis.RedisMessage {
 	kvReturn := make(map[string]rueidis.RedisMessage)
 	keyName := "ranking::test::0"
-	kvReturn[keyName] = mock.RedisArray(
-		mock.RedisString(entryS+"$$"+keyName),
-		mock.RedisString(entry2S+"$$"+keyName),
-	)
+	messages := make([]rueidis.RedisMessage, 0)
+
+	for _, v := range entries {
+		messages = append(messages, mock.RedisString(v+"$$"+keyName))
+	}
+	kvReturn[keyName] = mock.RedisArray(messages...)
+	return kvReturn
+}
+func mapResultNotParse(entries ...string) map[string]rueidis.RedisMessage {
+	kvReturn := make(map[string]rueidis.RedisMessage)
+	keyName := "ranking::test::0"
+	messages := make([]rueidis.RedisMessage, 0)
+
+	for _ = range entries {
+		messages = append(messages, mock.RedisString("empty"))
+	}
+	kvReturn[keyName] = mock.RedisArray(messages...)
+	return kvReturn
+}
+func mapResultNotStrSlice(entries ...string) map[string]rueidis.RedisMessage {
+	kvReturn := make(map[string]rueidis.RedisMessage)
+	keyName := "ranking::test::0"
+	kvReturn[keyName] = mock.RedisFloat64(1)
 	return kvReturn
 }

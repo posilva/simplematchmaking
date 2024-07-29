@@ -136,8 +136,8 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 			}
 
 			for _, value := range result {
-
 				v, err := value.AsStrSlice()
+
 				if err != nil {
 					return nil, errors.Join(ErrFailedToParseValue, err)
 				}
