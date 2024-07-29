@@ -8,6 +8,9 @@ import (
 	"testing"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
+	"github.com/posilva/simplematchmaking/internal/core/domain/codecs"
+	"github.com/posilva/simplematchmaking/internal/core/ports"
+	"github.com/posilva/simplematchmaking/internal/core/ports/mocks"
 	"github.com/posilva/simplematchmaking/internal/testutil"
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/mock"
@@ -16,9 +19,23 @@ import (
 	"golang.org/x/exp/rand"
 )
 
+var (
+	name        = "test"
+	queueConfig = domain.QueueConfig{
+		Name:           name,
+		MaxPlayers:     2,
+		NrBrackets:     10,
+		MinRanking:     1,
+		MaxRanking:     100,
+		MakeIterations: 3,
+	}
+)
+
 func TestRedisQueue_Enqueue(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	codec := codecs.NewJSONCodec()
 	entry := domain.QueueEntry{
 		TicketID: testutil.NewID(),
 		PlayerID: testutil.NewID(),
@@ -28,25 +45,13 @@ func TestRedisQueue_Enqueue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	name := "test"
+	lock := mocks.NewMockLock(ctrl)
 	client := mock.NewClient(ctrl)
-	v := fmt.Sprintf("%s$$%s", string(bytes), "test::0")
+	v := fmt.Sprintf("%s$$%s", string(bytes), "ranking::test::0")
 	client.EXPECT().Do(gomock.Any(), mock.Match(
-		"RPUSH", "test::0", v)).Return(mock.Result(mock.RedisInt64(1)))
+		"RPUSH", "ranking::test::0", v)).Return(mock.Result(mock.RedisInt64(1)))
 
-	q := &RedisQueue{
-		bracketInterval: 10,
-		keyPrefix:       name,
-		client:          client,
-		config: domain.QueueConfig{
-			Name:           name,
-			MaxPlayers:     2,
-			NrBrackets:     10,
-			MinRanking:     1,
-			MaxRanking:     100,
-			MakeIterations: 3,
-		},
-	}
+	q := NewRedisQueue(client, queueConfig, codec, lock)
 	err = q.Enqueue(context.Background(), entry)
 	require.NoError(t, err)
 
@@ -54,39 +59,109 @@ func TestRedisQueue_Enqueue(t *testing.T) {
 func TestRedisQueue_Enqueue_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
 	entry := domain.QueueEntry{
 		TicketID: testutil.NewID(),
 		PlayerID: testutil.NewID(),
 		Ranking:  1,
 	}
-	bytes, err := json.Marshal(entry)
+	codec := codecs.NewJSONCodec()
+
+	bytes, err := codec.Encode(entry)
 	if err != nil {
 		t.Fatal(err)
 	}
-	name := "test"
+	lock := mocks.NewMockLock(ctrl)
 	client := mock.NewClient(ctrl)
-	v := fmt.Sprintf("%s$$%s", string(bytes), "test::0")
+	v := fmt.Sprintf("%s$$%s", string(bytes), "ranking::test::0")
 	client.EXPECT().Do(gomock.Any(), mock.Match(
-		"RPUSH", "test::0", v)).Return(mock.ErrorResult(fmt.Errorf("error")))
+		"RPUSH", "ranking::test::0", v)).Return(mock.ErrorResult(fmt.Errorf("error")))
 
-	q := &RedisQueue{
-		bracketInterval: 10,
-		keyPrefix:       name,
-		client:          client,
-		config: domain.QueueConfig{
-			Name:           name,
-			MaxPlayers:     2,
-			NrBrackets:     10,
-			MinRanking:     1,
-			MaxRanking:     100,
-			MakeIterations: 3,
-		},
-	}
+	q := NewRedisQueue(client, queueConfig, codec, lock)
 	err = q.Enqueue(context.Background(), entry)
 	require.ErrorContains(t, err, ErrFailedExecuteCommand.Error())
 
 }
+func TestRedisQueue_Enqueue_Error_Encode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	entry := domain.QueueEntry{
+		TicketID: testutil.NewID(),
+		PlayerID: testutil.NewID(),
+		Ranking:  1,
+	}
+	codecMock := mocks.NewMockCodec(ctrl)
+	client := mock.NewClient(ctrl)
+	lock := mocks.NewMockLock(ctrl)
+	codecMock.EXPECT().Encode(gomock.Any()).Return(nil, fmt.Errorf("wrong"))
+
+	q := NewRedisQueue(client, queueConfig, codecMock, lock)
+	err := q.Enqueue(context.Background(), entry)
+	require.ErrorContains(t, err, ErrFailedToEncodeQueueEntry.Error())
+
+}
+
 func TestRedisQueue_Make(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	lockMock := mocks.NewMockLock(ctrl)
+	clientMock := mock.NewClient(ctrl)
+
+	codec := codecs.NewJSONCodec()
+
+	lockMock.EXPECT().Acquire(gomock.Any(), "test:lock").
+		Return(context.Background(), func() {
+			fmt.Println("lock was canceled by the test")
+		}, nil)
+
+	entry, entryS := queueEntry(t, codec)
+	entry2, entry2S := queueEntry(t, codec)
+
+	listResult := mock.Result(
+		mock.RedisMap(
+			mapResult(entryS, entry2S),
+		))
+
+	nilResult := mock.Result(
+		mock.RedisNil(),
+	)
+
+	ct := 0
+	clientMock.EXPECT().
+		Do(gomock.Any(),
+			mock.MatchFn(
+				func(cmd []string) bool {
+					return true
+				}, "testing description of matcher fn",
+			)).AnyTimes().
+		DoAndReturn(func(ctx context.Context, cmd interface{}) rueidis.RedisResult {
+			ct++
+			if ct > 1 {
+				return nilResult
+			}
+
+			return listResult
+		})
+
+	q := NewRedisQueue(clientMock, queueConfig, codec, lockMock)
+	matches, err := q.Make(context.Background())
+	require.NoError(t, err)
+	require.Len(t, matches, 1)
+	require.Len(t, matches[0].Entries, 2)
+
+	// it's time to decode tickets received
+	qe1 := matches[0].Entries[0]
+	qe2 := matches[0].Entries[1]
+
+	require.Equal(t, entry, qe1)
+	require.Equal(t, entry2, qe2)
+
+}
+
+func TestRedisQueue_MakeExperiment(t *testing.T) {
+
 	count := int64(8)
 	// player with ranking n
 	maxPlayers := 1000
@@ -172,7 +247,6 @@ func TestRedisQueue_Make(t *testing.T) {
 				for i := 0; i < len(v); i = i + int(count) {
 					if i <= len(v)-int(count) {
 						allMatched = append(allMatched, v[i]+":"+v[i+1])
-						//t.Logf("match between: %s ", v[i:i+int(count)])
 					} else {
 						remainingPlayers = v[i:]
 					}
@@ -182,4 +256,25 @@ func TestRedisQueue_Make(t *testing.T) {
 	}
 
 	require.Equal(t, len(allMatched), maxPlayers/int(count))
+}
+
+func queueEntry(t *testing.T, codec ports.Codec) (domain.QueueEntry, string) {
+	entry := domain.QueueEntry{
+		TicketID: testutil.NewID(),
+		PlayerID: testutil.NewID(),
+		Ranking:  1,
+	}
+	b, err := codec.Encode(entry)
+	require.NoError(t, err)
+	return entry, string(b)
+}
+
+func mapResult(entryS string, entry2S string) map[string]rueidis.RedisMessage {
+	kvReturn := make(map[string]rueidis.RedisMessage)
+	keyName := "ranking::test::0"
+	kvReturn[keyName] = mock.RedisArray(
+		mock.RedisString(entryS+"$$"+keyName),
+		mock.RedisString(entry2S+"$$"+keyName),
+	)
+	return kvReturn
 }

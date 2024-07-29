@@ -38,16 +38,16 @@ func (s *MatchmakingService) HandleMatchResultsError(err error) {
 func (s *MatchmakingService) HandleMatchResultsOK(matches []domain.MatchResult) {
 	now := time.Now().UTC().Unix()
 	for _, match := range matches {
-		for _, t := range match.Tickets {
-			s.logger.Info("Match result: Updating ticket", "ticketID", t.ID, "matchID", match.Match.ID)
+		for _, e := range match.Entries {
+			s.logger.Info("Match result: Updating ticket", "ticketID", e.TicketID, "matchID", match.Match.ID)
 			err := s.repository.UpdateTicket(context.Background(), domain.TicketRecord{
-				ID:        t.ID,
+				ID:        e.TicketID,
 				Timestamp: now,
 				State:     domain.TicketStateMatched,
 				MatchID:   match.Match.ID,
 			})
 			if err != nil {
-				s.logger.Error("Failed to update ticket", err, "ticketID", t.ID, "matchID", match.Match.ID)
+				s.logger.Error("Failed to update ticket", err, "ticketID", e.TicketID, "matchID", match.Match.ID)
 			}
 		}
 	}

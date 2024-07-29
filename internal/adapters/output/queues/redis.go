@@ -2,7 +2,6 @@ package queues
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -10,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
+	"github.com/posilva/simplematchmaking/internal/core/ports"
 	"github.com/redis/rueidis"
-	lock "github.com/redis/rueidis/rueidislock"
 	"github.com/segmentio/ksuid"
 )
 
@@ -24,8 +23,11 @@ var (
 	// ErrFailedToParseValue is returned when the redis value cannot be parsed
 	ErrFailedToParseValue = errors.New("failed to parse value")
 
-	// ErrFailedToMarshalQueueEntry is returned when the queue entry cannot be marshaled
-	ErrFailedToMarshalQueueEntry = errors.New("failed to marshal queue entry")
+	// ErrFailedToEncodeQueueEntry is returned when the queue entry cannot be marshaled
+	ErrFailedToEncodeQueueEntry = errors.New("failed to encode queue entry")
+
+	// ErrFailedToDecodeQueueEntry is returned when the queue entry cannot be marshaled
+	ErrFailedToDecodeQueueEntry = errors.New("failed to decode queue entry")
 
 	// ErrFailedExecuteCommand is returned when the redis command cannot be executed
 	ErrFailedExecuteCommand = errors.New("failed to execute command")
@@ -35,47 +37,34 @@ var (
 type RedisQueue struct {
 	config          domain.QueueConfig
 	client          rueidis.Client
-	locker          lock.Locker
+	lock            ports.Lock
 	keyPrefix       string
 	allKeys         []string
 	bracketInterval int
+	codec           ports.Codec
 }
 
 // NewRedisQueue creates a new RedisQueue
-func NewRedisQueue(c rueidis.Client, queueConfig domain.QueueConfig) *RedisQueue {
-	locker, err := lock.NewLocker(lock.LockerOption{
-		ClientBuilder: func(co rueidis.ClientOption) (rueidis.Client, error) {
-			return c, nil
-		},
-		KeyMajority:    1,    // Use KeyMajority=1 if you have only one Redis instance. Also make sure that all your `Locker`s share the same KeyMajority.
-		NoLoopTracking: true, // Enable this to have better performance if all your Redis are >= 7.0.5.
-	})
-
-	// This should not happend but nevertheless we should handle it
-	// it will only happen if the client is not properly configured
-	// when starting the queue
-	if err != nil {
-		panic(err)
-	}
-
+func NewRedisQueue(c rueidis.Client, queueConfig domain.QueueConfig, codec ports.Codec, lock ports.Lock) *RedisQueue {
 	allKeys := allKeysSetup(queueConfig)
 	bracketInterval := (queueConfig.MaxRanking - queueConfig.MinRanking) / queueConfig.NrBrackets
 	fmt.Println("bracketInterval", bracketInterval)
 	return &RedisQueue{
 		client:          c,
 		config:          queueConfig,
-		locker:          locker,
+		lock:            lock,
 		keyPrefix:       "ranking::" + queueConfig.Name,
 		allKeys:         allKeys,
 		bracketInterval: bracketInterval,
+		codec:           codec,
 	}
 }
 
 // Enqueue adds a player to the queue
 func (q *RedisQueue) Enqueue(ctx context.Context, qEntry domain.QueueEntry) error {
-	bytes, err := json.Marshal(qEntry)
+	bytes, err := q.codec.Encode(qEntry)
 	if err != nil {
-		return errors.Join(ErrFailedToMarshalQueueEntry, err)
+		return errors.Join(ErrFailedToEncodeQueueEntry, err)
 	}
 	bracket := qEntry.Ranking / q.bracketInterval
 	key := q.keyName(bracket)
@@ -96,7 +85,7 @@ func (q *RedisQueue) internalEnqueue(ctx context.Context, key string, value stri
 func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, err error) {
 
 	// Acquire a lock
-	ctxLock, cancel, err := q.locker.WithContext(ctx, q.config.Name+":lock")
+	ctxLock, cancel, err := q.lock.Acquire(ctx, q.config.Name+":lock")
 	if err != nil {
 		return nil, errors.Join(ErrFailedToAcquireLock, err)
 	}
@@ -133,6 +122,7 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 			break
 		}
 		for {
+
 			// using LMPop to get the first N players in the queue (from all the chunk keys)
 			// this allows to always start from lower ranking to the max ranking
 			cmd := q.client.B().Lmpop().Numkeys(int64(chunkKeysLen)).Key(chunkKeys...).Left().Count(int64(q.config.MaxPlayers)).Build()
@@ -146,6 +136,7 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 			}
 
 			for _, value := range result {
+
 				v, err := value.AsStrSlice()
 				if err != nil {
 					return nil, errors.Join(ErrFailedToParseValue, err)
@@ -158,17 +149,24 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 				}
 				for i := 0; i < len(v); i = i + q.config.MaxPlayers {
 					if i <= len(v)-q.config.MaxPlayers {
-						tickets := make([]domain.Ticket, 0)
+						entries := make([]domain.QueueEntry, 0)
 						for j := 0; j < q.config.MaxPlayers; j++ {
-							tickets = append(tickets, domain.Ticket{
-								ID: v[i+j],
-							})
+							kv := strings.Split(v[i+j], valueSeparator)
+							if len(kv) != 2 {
+								return nil, ErrFailedToParseValue
+							}
+							var qe domain.QueueEntry
+							err = q.codec.Decode([]byte(kv[0]), &qe)
+							if err != nil {
+								return nil, errors.Join(ErrFailedToDecodeQueueEntry, err)
+							}
+							entries = append(entries, qe)
 						}
 						matches = append(matches, domain.MatchResult{
 							Match: domain.Match{
 								ID: ksuid.New().String(),
 							},
-							Tickets: tickets,
+							Entries: entries,
 						})
 					} else {
 						remainingTickets = v[i:]

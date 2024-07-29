@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/posilva/simplematchmaking/cmd/simplematchmaking/config"
 	"github.com/posilva/simplematchmaking/internal/adapters/input/handler"
+	"github.com/posilva/simplematchmaking/internal/adapters/output/lock"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/logging"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/queues"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/repository"
@@ -49,25 +50,30 @@ func createService() (*services.MatchmakingService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create redis client: %v", err)
 	}
+	lock, err := lock.NewRedisLock(rc, 1)
+
+	codec := codecs.NewMsgPackCodec()
 
 	mmCfg := domain.MatchmakerConfig{
 		Name:         "main",
 		IntervalSecs: 2,
 	}
-	queue := queues.NewRedisQueue(rc, domain.QueueConfig{
+
+	qConfig := domain.QueueConfig{
 		MaxPlayers:     2,
 		NrBrackets:     10,
 		MinRanking:     1,
 		MaxRanking:     100,
 		MakeIterations: 3,
 		Name:           "global",
-	})
+	}
+
+	queue := queues.NewRedisQueue(rc, qConfig, codec, lock)
 	mm, err := services.NewMatchmaker(queue, mmCfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matchmaker: %v", err)
 	}
 
-	codec := codecs.NewMsgPackCodec()
 	repo := repository.NewRedisRepository(rc, codec, logger)
 
 	return services.NewMatchmakingService(logger, repo, mm), nil

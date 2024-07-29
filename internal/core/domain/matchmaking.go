@@ -53,7 +53,7 @@ type MatchResult struct {
 	// Match is the match data
 	Match Match `json:"match" msgpack:"match" mapstructure:"match"`
 	// Tickets are the tickets involved in the match
-	Tickets []Ticket `json:"tickets" msgpack:"tickets" mapstructure:"tickets"`
+	Entries []QueueEntry `json:"entries" msgpack:"entries" mapstructure:"entries"`
 }
 
 // MatchmakerConfig represents the configuration of a matchmaker

@@ -70,6 +70,45 @@ func (mr *MockCodecMockRecorder) Encode(v any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Encode", reflect.TypeOf((*MockCodec)(nil).Encode), v)
 }
 
+// MockLock is a mock of Lock interface.
+type MockLock struct {
+	ctrl     *gomock.Controller
+	recorder *MockLockMockRecorder
+}
+
+// MockLockMockRecorder is the mock recorder for MockLock.
+type MockLockMockRecorder struct {
+	mock *MockLock
+}
+
+// NewMockLock creates a new mock instance.
+func NewMockLock(ctrl *gomock.Controller) *MockLock {
+	mock := &MockLock{ctrl: ctrl}
+	mock.recorder = &MockLockMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLock) EXPECT() *MockLockMockRecorder {
+	return m.recorder
+}
+
+// Acquire mocks base method.
+func (m *MockLock) Acquire(ctx context.Context, key string) (context.Context, context.CancelFunc, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Acquire", ctx, key)
+	ret0, _ := ret[0].(context.Context)
+	ret1, _ := ret[1].(context.CancelFunc)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Acquire indicates an expected call of Acquire.
+func (mr *MockLockMockRecorder) Acquire(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Acquire", reflect.TypeOf((*MockLock)(nil).Acquire), ctx, key)
+}
+
 // MockMatchResultsListHandler is a mock of MatchResultsListHandler interface.
 type MockMatchResultsListHandler struct {
 	ctrl     *gomock.Controller

@@ -12,6 +12,11 @@ type Codec interface {
 	Decode(data []byte, v interface{}) error
 }
 
+// Lock defines the interface for Lock
+type Lock interface {
+	Acquire(ctx context.Context, key string) (context.Context, context.CancelFunc, error)
+}
+
 // MatchResultsListHandler defines the interface to handle match results
 type MatchResultsListHandler interface {
 	HandleMatchResultsOK(matches []domain.MatchResult)
