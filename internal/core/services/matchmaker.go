@@ -6,7 +6,6 @@ import (
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
 	"github.com/posilva/simplematchmaking/internal/core/ports"
-	"github.com/segmentio/ksuid"
 )
 
 // Matchmaker is the Matchmaker implementation using
@@ -34,9 +33,9 @@ func NewMatchmaker(queue ports.Queue, cfg domain.MatchmakerConfig, logger ports.
 }
 
 // AddPlayer adds a player to the matchmaker
-func (m *Matchmaker) AddPlayer(ctx context.Context, p domain.Player) error {
+func (m *Matchmaker) AddPlayer(ctx context.Context, ticketID string, p domain.Player) error {
 	qe := domain.QueueEntry{
-		TicketID: ksuid.New().String(),
+		TicketID: ticketID,
 		PlayerID: p.ID,
 		Ranking:  p.Ranking,
 	}
@@ -46,17 +45,20 @@ func (m *Matchmaker) AddPlayer(ctx context.Context, p domain.Player) error {
 
 // Matchmake finds a match
 func (m *Matchmaker) Matchmake() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(m.config.IntervalSecs))
-	defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(m.config.MakeTimeoutSecs)*time.Second)
+	defer func() {
+		cancel()
+	}()
 
 	mr, err := m.queue.Make(ctx)
 	if err != nil {
 		m.logger.Error("failed to make match: %v", err, m.queue.Name())
-		m.matchResultHandler.HandleMatchResultsError(err)
+		m.matchResultHandler.HandleMatchResultsError(m.queue.Name(), err)
 		return
 	}
 	if m.matchResultHandler != nil {
-		m.matchResultHandler.HandleMatchResultsOK(mr)
+		m.logger.Debug("Match results found", "matches", len(mr))
+		m.matchResultHandler.HandleMatchResultsOK(m.queue.Name(), mr)
 	}
 }
 

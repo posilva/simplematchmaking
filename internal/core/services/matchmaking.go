@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/posilva/simplematchmaking/internal/adapters/output/repository"
 	"github.com/posilva/simplematchmaking/internal/core/domain"
 	"github.com/posilva/simplematchmaking/internal/core/ports"
 	"github.com/segmentio/ksuid"
@@ -30,21 +32,23 @@ func NewMatchmakingService(logger ports.Logger, repo ports.Repository, mm ports.
 }
 
 // HandleMatchResultsError handles the match result error
-func (s *MatchmakingService) HandleMatchResultsError(err error) {
-	s.logger.Error("Match result error received", err)
+func (s *MatchmakingService) HandleMatchResultsError(queue string, err error) {
+	s.logger.Error("Match result error received", err, "queue", queue)
 }
 
 // HandleMatchResultsOK handles the match result
-func (s *MatchmakingService) HandleMatchResultsOK(matches []domain.MatchResult) {
+func (s *MatchmakingService) HandleMatchResultsOK(queue string, matches []domain.MatchResult) {
 	now := time.Now().UTC().Unix()
+	s.logger.Debug("Match results found", "matches", len(matches), "queue", queue)
 	for _, match := range matches {
 		for _, e := range match.Entries {
-			s.logger.Info("Match result: Updating ticket", "ticketID", e.TicketID, "matchID", match.Match.ID)
 			err := s.repository.UpdateTicket(context.Background(), domain.TicketRecord{
 				ID:        e.TicketID,
 				Timestamp: now,
 				State:     domain.TicketStateMatched,
-				MatchID:   match.Match.ID,
+				PlayerID:  e.PlayerID,
+				Match:     match.Match,
+				Queue:     queue,
 			})
 			if err != nil {
 				s.logger.Error("Failed to update ticket", err, "ticketID", e.TicketID, "matchID", match.Match.ID)
@@ -71,7 +75,7 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 		}, nil
 	}
 
-	err = s.matchmaker.AddPlayer(ctx, p)
+	err = s.matchmaker.AddPlayer(ctx, ticketID, p)
 	if err != nil {
 		s.logger.Error("Failed to add player to the matchmaker", err)
 		return domain.Ticket{}, fmt.Errorf("failed to add player to the matchmaker: %v", err)
@@ -100,13 +104,14 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 func (s *MatchmakingService) CheckMatch(ctx context.Context, ticketID string) (domain.Match, error) {
 	ticket, err := s.repository.GetTicket(ctx, ticketID)
 	if err != nil {
-		s.logger.Error("Failed to get ticket status", err)
+		if errors.Is(err, repository.ErrTicketNotFound) {
+			s.logger.Error("Failed to get ticket", err)
+			return domain.Match{}, ErrMatchNotFound
+		}
 		return domain.Match{}, fmt.Errorf("failed to get ticket status: %v", err)
 	}
 	if ticket.State == domain.TicketStateMatched {
-		return domain.Match{
-			ID: ticket.MatchID,
-		}, nil
+		return ticket.Match, nil
 	}
 	return domain.Match{}, ErrMatchNotFound
 }

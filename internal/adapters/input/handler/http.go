@@ -63,6 +63,7 @@ func (h *HTTPHandler) HandleCheckMatch(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, GetMatchOutput{
 		MatchID: m.ID,
+		Tickets: m.TicketIDs,
 	})
 }
 

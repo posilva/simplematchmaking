@@ -19,7 +19,9 @@ import (
 
 // Run starts the application
 func Run() {
-	r := gin.Default()
+	r := gin.New()
+	//r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 
 	service, err := createService()
 	if err != nil {
@@ -52,18 +54,19 @@ func createService() (*services.MatchmakingService, error) {
 	}
 	lock, err := lock.NewRedisLock(rc, 1)
 
-	codec := codecs.NewMsgPackCodec()
+	codec := codecs.NewJSONCodec()
 
 	mmCfg := domain.MatchmakerConfig{
-		Name:         "main",
-		IntervalSecs: 2,
+		Name:            "main",
+		IntervalSecs:    5,
+		MakeTimeoutSecs: 4,
 	}
 
 	qConfig := domain.QueueConfig{
 		MaxPlayers:     2,
-		NrBrackets:     10,
+		NrBrackets:     100,
 		MinRanking:     1,
-		MaxRanking:     100,
+		MaxRanking:     1000,
 		MakeIterations: 3,
 		Name:           "global",
 	}

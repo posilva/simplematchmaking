@@ -19,14 +19,14 @@ type Lock interface {
 
 // MatchResultsListHandler defines the interface to handle match results
 type MatchResultsListHandler interface {
-	HandleMatchResultsOK(matches []domain.MatchResult)
-	HandleMatchResultsError(err error)
+	HandleMatchResultsOK(queue string, matches []domain.MatchResult)
+	HandleMatchResultsError(queue string, err error)
 }
 
 // Matchmaker defines the Matchmaker interface
 type Matchmaker interface {
 	Matchmake()
-	AddPlayer(ctx context.Context, p domain.Player) error
+	AddPlayer(ctx context.Context, ticketID string, p domain.Player) error
 	Subscribe(handler MatchResultsListHandler)
 }
 

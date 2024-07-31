@@ -4,14 +4,10 @@ package lock
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/redis/rueidis"
 	redislock "github.com/redis/rueidis/rueidislock"
-)
-
-var (
-	// ErrFailedToCreateLock is returned when the locker cannot be created
-	ErrFailedToCreateLock = errors.New("failed to create locker")
 )
 
 // RedisLock is the Redis implementation of the Locker output port
@@ -26,8 +22,9 @@ func NewRedisLock(c rueidis.Client, keyMajority int32) (*RedisLock, error) {
 		ClientBuilder: func(co rueidis.ClientOption) (rueidis.Client, error) {
 			return c, nil
 		},
-		KeyMajority:    keyMajority, // Use KeyMajority=1 if you have only one Redis instance. Also make sure that all your `Locker`s share the same KeyMajority.
-		NoLoopTracking: true,        // Enable this to have better performance if all your Redis are >= 7.0.5.
+		ExtendInterval: 5 * time.Second, // Extend the lock every 5 seconds.
+		KeyMajority:    keyMajority,     // Use KeyMajority=1 if you have only one Redis instance. Also make sure that all your `Locker`s share the same KeyMajority.
+		NoLoopTracking: true,            // Enable this to have better performance if all your Redis are >= 7.0.5.
 	})
 
 	if err != nil {
@@ -41,5 +38,14 @@ func NewRedisLock(c rueidis.Client, keyMajority int32) (*RedisLock, error) {
 
 // Acquire acquires a lock
 func (r *RedisLock) Acquire(ctx context.Context, key string) (context.Context, context.CancelFunc, error) {
-	return r.locker.WithContext(ctx, key)
+	c, f, err := r.locker.TryWithContext(ctx, key)
+	if err != nil {
+		if errors.Is(err, redislock.ErrLockerClosed) {
+			return nil, nil, ErrLockerClosed
+		}
+		if errors.Is(err, redislock.ErrNotLocked) {
+			return nil, nil, ErrNotLocked
+		}
+	}
+	return c, f, nil
 }

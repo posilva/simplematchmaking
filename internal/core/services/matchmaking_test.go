@@ -24,7 +24,7 @@ func TestMatchmakingService_FindMatch(t *testing.T) {
 	pID := testutil.NewID()
 
 	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
-	mmMock.EXPECT().AddPlayer(gomock.Any(), gomock.Any()).Return(nil)
+	mmMock.EXPECT().AddPlayer(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	rps := repoMock.EXPECT().ReservePlayerSlot(ctx, pID, "queue1", gomock.Any())
 	var expectedID string
@@ -61,9 +61,6 @@ func TestMatchmakingService_FindMatch_Exist(t *testing.T) {
 	log := testutil.NewLogger(t)
 
 	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
-	// mmMock.EXPECT().AddPlayer(gomock.Any(), gomock.Any()).Return(nil)
-
-	// repoMock.EXPECT().UpdateTicket(gomock.Any(), gomock.Any()).Return(nil)
 	repoMock.EXPECT().ReservePlayerSlot(
 		ctx, "player1", "queue1", gomock.Any()).Return(tID, nil)
 

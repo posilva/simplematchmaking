@@ -16,23 +16,6 @@ import (
 
 const valueSeparator = "$$"
 
-var (
-	// ErrFailedToAcquireLock is returned when the lock cannot be acquired
-	ErrFailedToAcquireLock = errors.New("failed to acquire lock")
-
-	// ErrFailedToParseValue is returned when the redis value cannot be parsed
-	ErrFailedToParseValue = errors.New("failed to parse value")
-
-	// ErrFailedToEncodeQueueEntry is returned when the queue entry cannot be marshaled
-	ErrFailedToEncodeQueueEntry = errors.New("failed to encode queue entry")
-
-	// ErrFailedToDecodeQueueEntry is returned when the queue entry cannot be marshaled
-	ErrFailedToDecodeQueueEntry = errors.New("failed to decode queue entry")
-
-	// ErrFailedExecuteCommand is returned when the redis command cannot be executed
-	ErrFailedExecuteCommand = errors.New("failed to execute command")
-)
-
 // RedisQueue is the Matchmaker implementation using Redis
 type RedisQueue struct {
 	config          domain.QueueConfig
@@ -46,14 +29,14 @@ type RedisQueue struct {
 
 // NewRedisQueue creates a new RedisQueue
 func NewRedisQueue(c rueidis.Client, queueConfig domain.QueueConfig, codec ports.Codec, lock ports.Lock) *RedisQueue {
-	allKeys := allKeysSetup(queueConfig)
-	bracketInterval := (queueConfig.MaxRanking - queueConfig.MinRanking) / queueConfig.NrBrackets
-	fmt.Println("bracketInterval", bracketInterval)
+	prefix := "ranking::" + queueConfig.Name
+	allKeys := allKeysSetup(prefix, queueConfig)
+	bracketInterval := (queueConfig.MaxRanking - queueConfig.MinRanking) + 1/queueConfig.NrBrackets
 	return &RedisQueue{
 		client:          c,
 		config:          queueConfig,
 		lock:            lock,
-		keyPrefix:       "ranking::" + queueConfig.Name,
+		keyPrefix:       prefix,
 		allKeys:         allKeys,
 		bracketInterval: bracketInterval,
 		codec:           codec,
@@ -67,7 +50,7 @@ func (q *RedisQueue) Enqueue(ctx context.Context, qEntry domain.QueueEntry) erro
 		return errors.Join(ErrFailedToEncodeQueueEntry, err)
 	}
 	bracket := qEntry.Ranking / q.bracketInterval
-	key := q.keyName(bracket)
+	key := keyName(q.keyPrefix, bracket)
 	return q.internalEnqueue(ctx, key, string(bytes))
 }
 
@@ -83,17 +66,17 @@ func (q *RedisQueue) internalEnqueue(ctx context.Context, key string, value stri
 
 // Make finds a match
 func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, err error) {
-
 	// Acquire a lock
 	ctxLock, cancel, err := q.lock.Acquire(ctx, q.config.Name+":lock")
 	if err != nil {
 		return nil, errors.Join(ErrFailedToAcquireLock, err)
 	}
-	defer cancel()
-
 	err = nil
 	remainingTickets := make([]string, 0)
 	matches = make([]domain.MatchResult, 0)
+	defer func() {
+		cancel()
+	}()
 
 	defer func() {
 		count := len(remainingTickets)
@@ -114,7 +97,7 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 	// here we are using a chunk of 3 keys
 	chunkSize := 3
 	iteration := 0
-
+	debugCounter := 0
 	for {
 		chunkKeys := q.allKeys[iteration*chunkSize : (iteration+1)*chunkSize]
 		chunkKeysLen := len(chunkKeys)
@@ -136,22 +119,30 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 			}
 
 			for _, value := range result {
-				v, err := value.AsStrSlice()
-
+				// convert to a list of strings
+				current, err := value.AsStrSlice()
 				if err != nil {
 					return nil, errors.Join(ErrFailedToParseValue, err)
 				}
-				v = append(remainingTickets, v...)
+
+				debugCounter++
+				// add the remaining tickets to the current list
+				current = append(remainingTickets, current...)
+				lenCurrent := len(current)
+				// clean up remaining tickets
 				remainingTickets = nil
-				if len(v) < q.config.MaxPlayers {
-					remainingTickets = append(remainingTickets, v...)
+				// if we have less than the max players to handle then we add to the remaining tickets to be process later
+				if lenCurrent < q.config.MaxPlayers {
+					remainingTickets = append(remainingTickets, current...)
 					break
 				}
-				for i := 0; i < len(v); i = i + q.config.MaxPlayers {
-					if i <= len(v)-q.config.MaxPlayers {
+				// pick first N players (MaxPlayers) to create a match
+				for i := 0; i < lenCurrent; i = i + q.config.MaxPlayers {
+					if i <= lenCurrent-q.config.MaxPlayers {
 						entries := make([]domain.QueueEntry, 0)
+						tickets := make([]string, 0)
 						for j := 0; j < q.config.MaxPlayers; j++ {
-							kv := strings.Split(v[i+j], valueSeparator)
+							kv := strings.Split(current[i+j], valueSeparator)
 							if len(kv) != 2 {
 								return nil, ErrFailedToParseValue
 							}
@@ -161,15 +152,17 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 								return nil, errors.Join(ErrFailedToDecodeQueueEntry, err)
 							}
 							entries = append(entries, qe)
+							tickets = append(tickets, qe.TicketID)
 						}
 						matches = append(matches, domain.MatchResult{
 							Match: domain.Match{
-								ID: ksuid.New().String(),
+								ID:        ksuid.New().String(),
+								TicketIDs: tickets,
 							},
 							Entries: entries,
 						})
 					} else {
-						remainingTickets = v[i:]
+						remainingTickets = current[i:]
 					}
 				}
 			}
@@ -184,16 +177,16 @@ func (q *RedisQueue) Name() string {
 }
 
 // keyName returns the key name for the queue based on the bracket
-func (q *RedisQueue) keyName(bracket int) string {
-	return q.keyPrefix + "::" + strconv.FormatInt(int64(bracket), 10)
+func keyName(prefix string, bracket int) string {
+	return prefix + "::" + strconv.FormatInt(int64(bracket), 10)
 }
 
 // allKeysSetup returns all the keys for the queue based on the number of brackets
-func allKeysSetup(queueConfig domain.QueueConfig) []string {
+func allKeysSetup(prefix string, queueConfig domain.QueueConfig) []string {
 	allKeys := make([]string, 0)
 
 	for i := 0; i < queueConfig.NrBrackets; i++ {
-		bracket := fmt.Sprintf("ranking::queue::%s::%d", queueConfig.Name, i)
+		bracket := keyName(prefix, i)
 		allKeys = append(allKeys, bracket)
 	}
 	slices.Sort(allKeys)

@@ -180,17 +180,17 @@ func (m *MockMatchmaker) EXPECT() *MockMatchmakerMockRecorder {
 }
 
 // AddPlayer mocks base method.
-func (m *MockMatchmaker) AddPlayer(ctx context.Context, p domain.Player) error {
+func (m *MockMatchmaker) AddPlayer(ctx context.Context, ticketID string, p domain.Player) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddPlayer", ctx, p)
+	ret := m.ctrl.Call(m, "AddPlayer", ctx, ticketID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddPlayer indicates an expected call of AddPlayer.
-func (mr *MockMatchmakerMockRecorder) AddPlayer(ctx, p any) *gomock.Call {
+func (mr *MockMatchmakerMockRecorder) AddPlayer(ctx, ticketID, p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockMatchmaker)(nil).AddPlayer), ctx, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockMatchmaker)(nil).AddPlayer), ctx, ticketID, p)
 }
 
 // Matchmake mocks base method.
