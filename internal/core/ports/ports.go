@@ -12,15 +12,29 @@ type Codec interface {
 	Decode(data []byte, v interface{}) error
 }
 
+// Lock defines the interface for Lock
+type Lock interface {
+	Acquire(ctx context.Context, key string) (context.Context, context.CancelFunc, error)
+}
+
+// MatchResultsListHandler defines the interface to handle match results
+type MatchResultsListHandler interface {
+	HandleMatchResultsOK(queue string, matches []domain.MatchResult)
+	HandleMatchResultsError(queue string, err error)
+}
+
 // Matchmaker defines the Matchmaker interface
 type Matchmaker interface {
-	Match(ctx context.Context) (domain.MatchResult, error)
-	AddPlayer(ctx context.Context, p domain.Player) error
+	Matchmake()
+	AddPlayer(ctx context.Context, ticketID string, p domain.Player) error
+	Subscribe(handler MatchResultsListHandler)
 }
 
 // Queue defines the Queue interface
 type Queue interface {
-	AddPlayer(ctx context.Context, p domain.Player) error
+	Enqueue(ctx context.Context, qe domain.QueueEntry) error
+	Make(ctx context.Context) ([]domain.MatchResult, error)
+	Name() string
 }
 
 // MatchmakingService defines the matchmaking service interface
@@ -33,15 +47,15 @@ type MatchmakingService interface {
 // Repository defines the interface to handle with data to be stored/retrieved
 type Repository interface {
 	// ReservePlayerSlot reserves a player slot in the queue
-	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error)
+	ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (string, error)
 	// DeletePlayerSlot deletes a player slot in the queue
 	DeletePlayerSlot(ctx context.Context, playerID string, slot string) error
 	// UpdateTicket updates the ticket status
-	UpdateTicket(ctx context.Context, status domain.TicketStatus) error
+	UpdateTicket(ctx context.Context, ticket domain.TicketRecord) error
 	// GetTicket gets the ticket status
-	GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
+	GetTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error)
 	// DeleteTicket deletes the ticket status
-	DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error)
+	DeleteTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error)
 }
 
 // Logger defines a basic logger interface

@@ -24,6 +24,18 @@ type Player struct {
 	Ranking int `json:"ranking" msgpack:"ranking" mapstructure:"ranking"`
 }
 
+// QueueEntry represents a queue entry in the matchmaking service
+type QueueEntry struct {
+	// TicketID is the ID of the ticket to register in the queue
+	TicketID string `json:"ticketID" msgpack:"ticketID" mapstructure:"ticketID"`
+	// PlayerID is the ID of the player to register in the queue
+	PlayerID string `json:"playerID" msgpack:"playerID" mapstructure:"playerID"`
+	// Ranking is the ranking of the player
+	Ranking int `json:"ranking" msgpack:"ranking" mapstructure:"ranking"`
+	// Extra data field stored as string
+	Extra string `json:"extra" msgpack:"extra" mapstructure:"extra"`
+}
+
 // Ticket represents a ticket in the matchmaking service
 type Ticket struct {
 	// ID is the ticket ID
@@ -33,7 +45,8 @@ type Ticket struct {
 // Match represents a match in the matchmaking service
 type Match struct {
 	// ID is the match ID
-	ID string `json:"id" msgpack:"id" mapstructure:"id"`
+	ID        string   `json:"id" msgpack:"id" mapstructure:"id"`
+	TicketIDs []string `json:"ticketIDs" msgpack:"ticketIDs" mapstructure:"ticketIDs"`
 }
 
 // MatchResult represents the result of a matchmaker operation
@@ -41,23 +54,36 @@ type MatchResult struct {
 	// Match is the match data
 	Match Match `json:"match" msgpack:"match" mapstructure:"match"`
 	// Tickets are the tickets involved in the match
-	Tickets []Ticket `json:"tickets" msgpack:"tickets" mapstructure:"tickets"`
+	Entries []QueueEntry `json:"entries" msgpack:"entries" mapstructure:"entries"`
 }
 
 // MatchmakerConfig represents the configuration of a matchmaker
 type MatchmakerConfig struct {
 	// Name is the matchmaker name
 	Name string `json:"name" msgpack:"name" mapstructure:"name"`
-	// MaxPlayers is the maximum number of players in a match
-	MaxPlayers int `json:"maxPlayers" msgpack:"maxPlayers" mapstructure:"maxPlayers"`
-	// Interval is the matchmaker interval
-	Interval int `json:"interval" msgpack:"interval" mapstructure:"interval"`
-	// Queue is the matchmaker queue
-	Queue string `json:"queue" msgpack:"queue" mapstructure:"queue"`
+	// IntervalSecs is the matchmaker interval
+	IntervalSecs    int `json:"intervalSecs" msgpack:"intervalSecs" mapstructure:"intervalSecs"`
+	MakeTimeoutSecs int `json:"makeTimeoutSecs" msgpack:"makeTimeoutSecs" mapstructure:"makeTimeoutSecs"`
 }
 
-// TicketStatus represents the data of a ticket saved in the repository
-type TicketStatus struct {
+// QueueConfig represents the configuration of a matchmaker
+type QueueConfig struct {
+	// Name is the matchmaker name
+	Name string `json:"name" msgpack:"name" mapstructure:"name"`
+	// MaxPlayers is the maximum number of players in a match
+	MaxPlayers int `json:"maxPlayers" msgpack:"maxPlayers" mapstructure:"maxPlayers"`
+	// NrBrackets is the number of ranking brackets
+	NrBrackets int `json:"nrBrackets" msgpack:"nrBrackets" mapstructure:"nrBrackets"`
+	// MaxRanking is the maximum ranking
+	MaxRanking int `json:"maxRanking" msgpack:"maxRanking" mapstructure:"maxRanking"`
+	// MinRanking is the minimum ranking
+	MinRanking int `json:"minRanking" msgpack:"minRanking" mapstructure:"minRanking"`
+	// MakeIterations is the number of iterations to make a match
+	MakeIterations int `json:"makeIterations" msgpack:"makeIterations" mapstructure:"makeIterations"`
+}
+
+// TicketRecord represents the data of a ticket saved in the repository
+type TicketRecord struct {
 	// ID is the ticket ID
 	ID string `json:"id" msgpack:"id" mapstructure:"id"`
 	// Timestamp is the state timestamp
@@ -66,8 +92,8 @@ type TicketStatus struct {
 	State TicketState `json:"state" msgpack:"state" mapstructure:"state"`
 	// PlayerID is the player ID
 	PlayerID string `json:"uid" msgpack:"uid" mapstructure:"uid"`
-	// MatchID is the match ID
-	MatchID string `json:"mid" msgpack:"mid" mapstructure:"mid"`
+	// Match is the match assigned to the ticket
+	Match Match `json:"match,omitempty" msgpack:"match,omitempty" mapstructure:"match,omitempty"`
 	// Queue is the queue name
 	Queue string `json:"queue" msgpack:"queue" mapstructure:"queue"`
 }

@@ -3,7 +3,9 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
@@ -21,31 +23,47 @@ var (
 type RedisRepository struct {
 	client rueidis.Client
 	codec  ports.Codec
+	logger ports.Logger
 }
 
 // NewRedisRepository creates a new RedisRepository
-func NewRedisRepository(client rueidis.Client, codec ports.Codec) *RedisRepository {
+func NewRedisRepository(client rueidis.Client, codec ports.Codec, logger ports.Logger) *RedisRepository {
 	return &RedisRepository{
 		client: client,
 		codec:  codec,
+		logger: logger,
 	}
 }
 
 // ReservePlayerSlot reserves a player slot in the queue
-func (r *RedisRepository) ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (bool, error) {
+func (r *RedisRepository) ReservePlayerSlot(ctx context.Context, playerID string, slot string, ticketID string) (string, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
 	key := r.playerSlotKey(slot, playerID)
 	value := "status:reserved:ticket:" + ticketID
-	cmd := r.client.B().Set().Key(key).Value(value).Nx().ExSeconds(reservationTimeEx).Build()
-	resp, err := r.client.Do(ctxWithTimeout, cmd).AsBool()
+	cmdSET := r.client.B().Set().Key(key).Value(value).Nx().ExSeconds(reservationTimeEx).Build()
+	cmdGET := r.client.B().Get().Key(key).Build()
+	resp := r.client.DoMulti(ctxWithTimeout, cmdSET, cmdGET)
+	_, err := resp[0].AsBool()
 	if err != nil {
+		// if redis returns nil it means it already existed
 		if !rueidis.IsRedisNil(err) {
-			return resp, fmt.Errorf("failed to reserve player slot: '%v'  %v", slot, err)
+			return "", errors.Join(ErrFailedToReservePlayerSlot, fmt.Errorf(" [SET] slot: '%v'  %v", slot, err))
 		}
 	}
-	return resp, nil
+	respGET, err := resp[1].AsBytes()
+	if err != nil {
+		if !rueidis.IsRedisNil(err) {
+			return "", errors.Join(ErrFailedToReservePlayerSlot, fmt.Errorf(" [GET] slot: '%v'  %v", slot, err))
+		}
+		return "", errors.Join(ErrSomethingOddHappened, fmt.Errorf("[GET] did returned 'nil' after SET: '%v'  %v", slot, err))
+
+	}
+	vGet := string(respGET)
+	vGetTargetID := strings.Replace(vGet, "status:reserved:ticket:", "", -1)
+
+	return vGetTargetID, nil
 }
 
 // DeletePlayerSlot deletes a player slot in the queue
@@ -59,14 +77,14 @@ func (r *RedisRepository) DeletePlayerSlot(ctx context.Context, playerID string,
 }
 
 // UpdateTicket updates the ticket status
-func (r *RedisRepository) UpdateTicket(ctx context.Context, status domain.TicketStatus) error {
+func (r *RedisRepository) UpdateTicket(ctx context.Context, ticket domain.TicketRecord) error {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
-	key := r.ticketKey(status.ID)
-	value, err := r.codec.Encode(status)
+	key := r.ticketKey(ticket.ID)
+	value, err := r.codec.Encode(ticket)
 	if err != nil {
-		return fmt.Errorf("failed to encode ticket %v", err)
+		return errors.Join(ErrFailedToEncodeTicket, err)
 	}
 
 	// TODO: this should have a TTL
@@ -74,15 +92,15 @@ func (r *RedisRepository) UpdateTicket(ctx context.Context, status domain.Ticket
 	err = r.client.Do(ctxWithTimeout, cmd).Error()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return fmt.Errorf("failed to update ticket %v", err)
+			return errors.Join(ErrFailedToUpdateTicket, err)
 		}
-		return fmt.Errorf("ticket not found: %v", err)
+		return errors.Join(ErrTicketNotFound, err)
 	}
 	return nil
 }
 
 // GetTicket gets the ticket status
-func (r *RedisRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (r *RedisRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
@@ -91,21 +109,21 @@ func (r *RedisRepository) GetTicket(ctx context.Context, ticketID string) (domai
 	resp, err := r.client.Do(ctxWithTimeout, cmd).AsBytes()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return domain.TicketStatus{}, fmt.Errorf("failed to get ticket %v", err)
+			return domain.TicketRecord{}, errors.Join(ErrFailedToGetTicket, err)
 		}
-		return domain.TicketStatus{}, fmt.Errorf("ticket not found: %v", err)
+		return domain.TicketRecord{}, errors.Join(ErrTicketNotFound, err)
 	}
 
-	var status domain.TicketStatus
+	var status domain.TicketRecord
 	err = r.codec.Decode([]byte(resp), &status)
 	if err != nil {
-		return domain.TicketStatus{}, fmt.Errorf("failed to decode ticket %v", err)
+		return domain.TicketRecord{}, errors.Join(ErrFailedToDecodeTicket, err)
 	}
 	return status, nil
 }
 
 // DeleteTicket deletes the ticket status
-func (r *RedisRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (r *RedisRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
@@ -114,14 +132,15 @@ func (r *RedisRepository) DeleteTicket(ctx context.Context, ticketID string) (do
 	b, err := r.client.Do(ctxWithTimeout, cmd).AsBytes()
 	if err != nil {
 		if !rueidis.IsRedisNil(err) {
-			return domain.TicketStatus{}, fmt.Errorf("failed to delete ticket %v", err)
+			return domain.TicketRecord{}, errors.Join(ErrFailedToDeleteTicket, err)
+
 		}
-		return domain.TicketStatus{}, fmt.Errorf("ticket not found: %v", err)
+		return domain.TicketRecord{}, errors.Join(ErrTicketNotFound, err)
 	}
-	var status domain.TicketStatus
+	var status domain.TicketRecord
 	err = r.codec.Decode(b, &status)
 	if err != nil {
-		return domain.TicketStatus{}, fmt.Errorf("failed to decode ticket %v", err)
+		return domain.TicketRecord{}, errors.Join(ErrFailedToDecodeTicket, err)
 	}
 	return status, nil
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/posilva/simplematchmaking/internal/core/domain"
 	"github.com/posilva/simplematchmaking/internal/core/ports/mocks"
 	"github.com/posilva/simplematchmaking/internal/testutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -21,9 +21,19 @@ func TestMatchmakingService_FindMatch(t *testing.T) {
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
 
-	mmMock.EXPECT().AddPlayer(ctx, gomock.Any()).Return(nil)
-	repoMock.EXPECT().ReservePlayerSlot(
-		ctx, "player1", "queue1", gomock.Any()).Return(true, nil)
+	pID := testutil.NewID()
+
+	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
+	mmMock.EXPECT().AddPlayer(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+	rps := repoMock.EXPECT().ReservePlayerSlot(ctx, pID, "queue1", gomock.Any())
+	var expectedID string
+	rps.Do(func(ctx context.Context, playerID string, slot string, ticketID string) (string, error) {
+		expectedID = ticketID
+		rps.Return(ticketID, nil)
+		return ticketID, nil
+	})
+
 	repoMock.EXPECT().UpdateTicket(gomock.Any(), gomock.Any()).Return(nil)
 
 	s := NewMatchmakingService(
@@ -32,11 +42,11 @@ func TestMatchmakingService_FindMatch(t *testing.T) {
 		mmMock,
 	)
 	ticket, err := s.FindMatch(ctx, "queue1", domain.Player{
-		ID: "player1",
+		ID: pID,
 	})
 
-	assert.NoError(t, err)
-	assert.NotEmpty(t, ticket.ID)
+	require.NoError(t, err)
+	require.Equal(t, expectedID, ticket.ID)
 }
 
 func TestMatchmakingService_FindMatch_Exist(t *testing.T) {
@@ -44,23 +54,27 @@ func TestMatchmakingService_FindMatch_Exist(t *testing.T) {
 	defer ctrl.Finish()
 
 	ctx := context.Background()
+	tID := testutil.NewID()
+
 	repoMock := mocks.NewMockRepository(ctrl)
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
 
+	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
 	repoMock.EXPECT().ReservePlayerSlot(
-		ctx, "player1", "queue1", gomock.Any()).Return(false, nil)
+		ctx, "player1", "queue1", gomock.Any()).Return(tID, nil)
 
 	s := NewMatchmakingService(
 		log,
 		repoMock,
 		mmMock,
 	)
-	_, err := s.FindMatch(ctx, "queue1", domain.Player{
+	expectedID, err := s.FindMatch(ctx, "queue1", domain.Player{
 		ID: "player1",
 	})
 
-	assert.ErrorContains(t, err, "player already in the queue")
+	require.NoError(t, err)
+	require.Equal(t, tID, expectedID.ID)
 }
 
 func TestMatchmakingService_FindMatch_Error(t *testing.T) {
@@ -72,8 +86,9 @@ func TestMatchmakingService_FindMatch_Error(t *testing.T) {
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
 
+	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
 	repoMock.EXPECT().ReservePlayerSlot(
-		ctx, "player1", "queue1", gomock.Any()).Return(false, fmt.Errorf("any error"))
+		ctx, "player1", "queue1", gomock.Any()).Return("", fmt.Errorf("any error"))
 	s := NewMatchmakingService(
 		log,
 		repoMock,
@@ -83,5 +98,5 @@ func TestMatchmakingService_FindMatch_Error(t *testing.T) {
 		ID: "player1",
 	})
 
-	assert.ErrorContains(t, err, "any error")
+	require.ErrorContains(t, err, "any error")
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/posilva/simplematchmaking/cmd/simplematchmaking/config"
 	"github.com/posilva/simplematchmaking/internal/adapters/input/handler"
+	"github.com/posilva/simplematchmaking/internal/adapters/output/lock"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/logging"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/queues"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/repository"
@@ -16,8 +17,11 @@ import (
 	"github.com/posilva/simplematchmaking/internal/core/services"
 )
 
+// Run starts the application
 func Run() {
-	r := gin.Default()
+	r := gin.New()
+	//r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 
 	service, err := createService()
 	if err != nil {
@@ -48,18 +52,32 @@ func createService() (*services.MatchmakingService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create redis client: %v", err)
 	}
+	lock, err := lock.NewRedisLock(rc, 1)
+
+	codec := codecs.NewJSONCodec()
 
 	mmCfg := domain.MatchmakerConfig{
-		MaxPlayers: 2,
+		Name:            "main",
+		IntervalSecs:    5,
+		MakeTimeoutSecs: 4,
 	}
-	queue := queues.NewRedisQueue(rc, "main")
-	mm, err := services.NewMatchmaker(queue, mmCfg)
+
+	qConfig := domain.QueueConfig{
+		MaxPlayers:     2,
+		NrBrackets:     100,
+		MinRanking:     1,
+		MaxRanking:     1000,
+		MakeIterations: 3,
+		Name:           "global",
+	}
+
+	queue := queues.NewRedisQueue(rc, qConfig, codec, lock)
+	mm, err := services.NewMatchmaker(queue, mmCfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matchmaker: %v", err)
 	}
 
-	codec := codecs.NewMsgPackCodec()
-	repo := repository.NewRedisRepository(rc, codec)
+	repo := repository.NewRedisRepository(rc, codec, logger)
 
 	return services.NewMatchmakingService(logger, repo, mm), nil
 }

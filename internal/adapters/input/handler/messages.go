@@ -13,5 +13,6 @@ type FindMatchOutput struct {
 
 // GetMatchOutput is the output of getting a match
 type GetMatchOutput struct {
-	MatchID string `json:"match_id"`
+	MatchID string   `json:"match_id"`
+	Tickets []string `json:"tickets"`
 }

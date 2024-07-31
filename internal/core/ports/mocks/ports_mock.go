@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/posilva/simplematchmaking/internal/core/domain"
+	ports "github.com/posilva/simplematchmaking/internal/core/ports"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -69,6 +70,92 @@ func (mr *MockCodecMockRecorder) Encode(v any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Encode", reflect.TypeOf((*MockCodec)(nil).Encode), v)
 }
 
+// MockLock is a mock of Lock interface.
+type MockLock struct {
+	ctrl     *gomock.Controller
+	recorder *MockLockMockRecorder
+}
+
+// MockLockMockRecorder is the mock recorder for MockLock.
+type MockLockMockRecorder struct {
+	mock *MockLock
+}
+
+// NewMockLock creates a new mock instance.
+func NewMockLock(ctrl *gomock.Controller) *MockLock {
+	mock := &MockLock{ctrl: ctrl}
+	mock.recorder = &MockLockMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLock) EXPECT() *MockLockMockRecorder {
+	return m.recorder
+}
+
+// Acquire mocks base method.
+func (m *MockLock) Acquire(ctx context.Context, key string) (context.Context, context.CancelFunc, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Acquire", ctx, key)
+	ret0, _ := ret[0].(context.Context)
+	ret1, _ := ret[1].(context.CancelFunc)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Acquire indicates an expected call of Acquire.
+func (mr *MockLockMockRecorder) Acquire(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Acquire", reflect.TypeOf((*MockLock)(nil).Acquire), ctx, key)
+}
+
+// MockMatchResultsListHandler is a mock of MatchResultsListHandler interface.
+type MockMatchResultsListHandler struct {
+	ctrl     *gomock.Controller
+	recorder *MockMatchResultsListHandlerMockRecorder
+}
+
+// MockMatchResultsListHandlerMockRecorder is the mock recorder for MockMatchResultsListHandler.
+type MockMatchResultsListHandlerMockRecorder struct {
+	mock *MockMatchResultsListHandler
+}
+
+// NewMockMatchResultsListHandler creates a new mock instance.
+func NewMockMatchResultsListHandler(ctrl *gomock.Controller) *MockMatchResultsListHandler {
+	mock := &MockMatchResultsListHandler{ctrl: ctrl}
+	mock.recorder = &MockMatchResultsListHandlerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMatchResultsListHandler) EXPECT() *MockMatchResultsListHandlerMockRecorder {
+	return m.recorder
+}
+
+// HandleMatchResultsError mocks base method.
+func (m *MockMatchResultsListHandler) HandleMatchResultsError(err error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "HandleMatchResultsError", err)
+}
+
+// HandleMatchResultsError indicates an expected call of HandleMatchResultsError.
+func (mr *MockMatchResultsListHandlerMockRecorder) HandleMatchResultsError(err any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultsError", reflect.TypeOf((*MockMatchResultsListHandler)(nil).HandleMatchResultsError), err)
+}
+
+// HandleMatchResultsOK mocks base method.
+func (m *MockMatchResultsListHandler) HandleMatchResultsOK(matches []domain.MatchResult) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "HandleMatchResultsOK", matches)
+}
+
+// HandleMatchResultsOK indicates an expected call of HandleMatchResultsOK.
+func (mr *MockMatchResultsListHandlerMockRecorder) HandleMatchResultsOK(matches any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultsOK", reflect.TypeOf((*MockMatchResultsListHandler)(nil).HandleMatchResultsOK), matches)
+}
+
 // MockMatchmaker is a mock of Matchmaker interface.
 type MockMatchmaker struct {
 	ctrl     *gomock.Controller
@@ -93,32 +180,41 @@ func (m *MockMatchmaker) EXPECT() *MockMatchmakerMockRecorder {
 }
 
 // AddPlayer mocks base method.
-func (m *MockMatchmaker) AddPlayer(ctx context.Context, p domain.Player) error {
+func (m *MockMatchmaker) AddPlayer(ctx context.Context, ticketID string, p domain.Player) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddPlayer", ctx, p)
+	ret := m.ctrl.Call(m, "AddPlayer", ctx, ticketID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddPlayer indicates an expected call of AddPlayer.
-func (mr *MockMatchmakerMockRecorder) AddPlayer(ctx, p any) *gomock.Call {
+func (mr *MockMatchmakerMockRecorder) AddPlayer(ctx, ticketID, p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockMatchmaker)(nil).AddPlayer), ctx, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockMatchmaker)(nil).AddPlayer), ctx, ticketID, p)
 }
 
-// Match mocks base method.
-func (m *MockMatchmaker) Match(ctx context.Context) (domain.MatchResult, error) {
+// Matchmake mocks base method.
+func (m *MockMatchmaker) Matchmake() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Match", ctx)
-	ret0, _ := ret[0].(domain.MatchResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	m.ctrl.Call(m, "Matchmake")
 }
 
-// Match indicates an expected call of Match.
-func (mr *MockMatchmakerMockRecorder) Match(ctx any) *gomock.Call {
+// Matchmake indicates an expected call of Matchmake.
+func (mr *MockMatchmakerMockRecorder) Matchmake() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Match", reflect.TypeOf((*MockMatchmaker)(nil).Match), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Matchmake", reflect.TypeOf((*MockMatchmaker)(nil).Matchmake))
+}
+
+// Subscribe mocks base method.
+func (m *MockMatchmaker) Subscribe(handler ports.MatchResultsListHandler) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Subscribe", handler)
+}
+
+// Subscribe indicates an expected call of Subscribe.
+func (mr *MockMatchmakerMockRecorder) Subscribe(handler any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockMatchmaker)(nil).Subscribe), handler)
 }
 
 // MockQueue is a mock of Queue interface.
@@ -144,18 +240,47 @@ func (m *MockQueue) EXPECT() *MockQueueMockRecorder {
 	return m.recorder
 }
 
-// AddPlayer mocks base method.
-func (m *MockQueue) AddPlayer(ctx context.Context, p domain.Player) error {
+// Enqueue mocks base method.
+func (m *MockQueue) Enqueue(ctx context.Context, qe domain.QueueEntry) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddPlayer", ctx, p)
+	ret := m.ctrl.Call(m, "Enqueue", ctx, qe)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AddPlayer indicates an expected call of AddPlayer.
-func (mr *MockQueueMockRecorder) AddPlayer(ctx, p any) *gomock.Call {
+// Enqueue indicates an expected call of Enqueue.
+func (mr *MockQueueMockRecorder) Enqueue(ctx, qe any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlayer", reflect.TypeOf((*MockQueue)(nil).AddPlayer), ctx, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockQueue)(nil).Enqueue), ctx, qe)
+}
+
+// Make mocks base method.
+func (m *MockQueue) Make(ctx context.Context) ([]domain.MatchResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Make", ctx)
+	ret0, _ := ret[0].([]domain.MatchResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Make indicates an expected call of Make.
+func (mr *MockQueueMockRecorder) Make(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Make", reflect.TypeOf((*MockQueue)(nil).Make), ctx)
+}
+
+// Name mocks base method.
+func (m *MockQueue) Name() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Name")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Name indicates an expected call of Name.
+func (mr *MockQueueMockRecorder) Name() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockQueue)(nil).Name))
 }
 
 // MockMatchmakingService is a mock of MatchmakingService interface.
@@ -263,10 +388,10 @@ func (mr *MockRepositoryMockRecorder) DeletePlayerSlot(ctx, playerID, slot any) 
 }
 
 // DeleteTicket mocks base method.
-func (m *MockRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (m *MockRepository) DeleteTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteTicket", ctx, ticketID)
-	ret0, _ := ret[0].(domain.TicketStatus)
+	ret0, _ := ret[0].(domain.TicketRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -278,10 +403,10 @@ func (mr *MockRepositoryMockRecorder) DeleteTicket(ctx, ticketID any) *gomock.Ca
 }
 
 // GetTicket mocks base method.
-func (m *MockRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketStatus, error) {
+func (m *MockRepository) GetTicket(ctx context.Context, ticketID string) (domain.TicketRecord, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTicket", ctx, ticketID)
-	ret0, _ := ret[0].(domain.TicketStatus)
+	ret0, _ := ret[0].(domain.TicketRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -293,10 +418,10 @@ func (mr *MockRepositoryMockRecorder) GetTicket(ctx, ticketID any) *gomock.Call 
 }
 
 // ReservePlayerSlot mocks base method.
-func (m *MockRepository) ReservePlayerSlot(ctx context.Context, playerID, slot, ticketID string) (bool, error) {
+func (m *MockRepository) ReservePlayerSlot(ctx context.Context, playerID, slot, ticketID string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReservePlayerSlot", ctx, playerID, slot, ticketID)
-	ret0, _ := ret[0].(bool)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -308,17 +433,17 @@ func (mr *MockRepositoryMockRecorder) ReservePlayerSlot(ctx, playerID, slot, tic
 }
 
 // UpdateTicket mocks base method.
-func (m *MockRepository) UpdateTicket(ctx context.Context, status domain.TicketStatus) error {
+func (m *MockRepository) UpdateTicket(ctx context.Context, ticket domain.TicketRecord) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateTicket", ctx, status)
+	ret := m.ctrl.Call(m, "UpdateTicket", ctx, ticket)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateTicket indicates an expected call of UpdateTicket.
-func (mr *MockRepositoryMockRecorder) UpdateTicket(ctx, status any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) UpdateTicket(ctx, ticket any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTicket", reflect.TypeOf((*MockRepository)(nil).UpdateTicket), ctx, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTicket", reflect.TypeOf((*MockRepository)(nil).UpdateTicket), ctx, ticket)
 }
 
 // MockLogger is a mock of Logger interface.
