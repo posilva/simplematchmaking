@@ -32,9 +32,9 @@ func Run() {
 	r.GET("/", httpHandler.HandleRoot)
 	api := r.Group("api/v1")
 
-	api.PUT("/queue", httpHandler.HandleFindMatch)
-	api.GET("/queue/:ticketId", httpHandler.HandleCheckMatch)
-	api.DELETE("/queue/:ticketId", httpHandler.HandleCancelMatch)
+	api.PUT("/queue/:queue", httpHandler.HandleFindMatch)
+	api.GET("/ticket/:ticketId", httpHandler.HandleCheckMatch)
+	api.DELETE("/ticket/:ticketId", httpHandler.HandleCancelMatch)
 
 	err = r.Run(config.GetAddr())
 	if err != nil {

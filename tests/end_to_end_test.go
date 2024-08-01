@@ -155,7 +155,7 @@ func findMatchRequest() (response string, err error) {
 	})
 }
 func findMatchRequestWithInput(input handler.FindMatchInput) (response string, err error) {
-	path := fmt.Sprintf("/api/v1/queue")
+	path := fmt.Sprintf("/api/v1/queue/global")
 
 	in, err := json.Marshal(&input)
 
@@ -177,7 +177,7 @@ func findMatchRequestWithInput(input handler.FindMatchInput) (response string, e
 }
 
 func getMatchRequest(ticketID string, expectedStatus int) (response string, err error) {
-	path := fmt.Sprintf("/api/v1/queue/%s", ticketID)
+	path := fmt.Sprintf("/api/v1/ticket/%s", ticketID)
 	err = requests.
 		URL(path).
 		Host(baseURL).
@@ -189,7 +189,7 @@ func getMatchRequest(ticketID string, expectedStatus int) (response string, err 
 	return response, err
 }
 func getMatchRequestAny(ticketID string) (response string, err error) {
-	path := fmt.Sprintf("/api/v1/queue/%s", ticketID)
+	path := fmt.Sprintf("/api/v1/ticket/%s", ticketID)
 	err = requests.
 		URL(path).
 		Host(baseURL).
@@ -200,7 +200,7 @@ func getMatchRequestAny(ticketID string) (response string, err error) {
 }
 
 func cancelMatchRequest(ticketID string) (err error) {
-	path := fmt.Sprintf("/api/v1/queue/%s", ticketID)
+	path := fmt.Sprintf("/api/v1/ticket/%s", ticketID)
 	err = requests.
 		URL(path).
 		Delete().
