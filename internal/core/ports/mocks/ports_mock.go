@@ -133,27 +133,27 @@ func (m *MockMatchResultsListHandler) EXPECT() *MockMatchResultsListHandlerMockR
 }
 
 // HandleMatchResultsError mocks base method.
-func (m *MockMatchResultsListHandler) HandleMatchResultsError(err error) {
+func (m *MockMatchResultsListHandler) HandleMatchResultsError(queue string, err error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "HandleMatchResultsError", err)
+	m.ctrl.Call(m, "HandleMatchResultsError", queue, err)
 }
 
 // HandleMatchResultsError indicates an expected call of HandleMatchResultsError.
-func (mr *MockMatchResultsListHandlerMockRecorder) HandleMatchResultsError(err any) *gomock.Call {
+func (mr *MockMatchResultsListHandlerMockRecorder) HandleMatchResultsError(queue, err any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultsError", reflect.TypeOf((*MockMatchResultsListHandler)(nil).HandleMatchResultsError), err)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultsError", reflect.TypeOf((*MockMatchResultsListHandler)(nil).HandleMatchResultsError), queue, err)
 }
 
 // HandleMatchResultsOK mocks base method.
-func (m *MockMatchResultsListHandler) HandleMatchResultsOK(matches []domain.MatchResult) {
+func (m *MockMatchResultsListHandler) HandleMatchResultsOK(queue string, matches []domain.MatchResult) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "HandleMatchResultsOK", matches)
+	m.ctrl.Call(m, "HandleMatchResultsOK", queue, matches)
 }
 
 // HandleMatchResultsOK indicates an expected call of HandleMatchResultsOK.
-func (mr *MockMatchResultsListHandlerMockRecorder) HandleMatchResultsOK(matches any) *gomock.Call {
+func (mr *MockMatchResultsListHandlerMockRecorder) HandleMatchResultsOK(queue, matches any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultsOK", reflect.TypeOf((*MockMatchResultsListHandler)(nil).HandleMatchResultsOK), matches)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMatchResultsOK", reflect.TypeOf((*MockMatchResultsListHandler)(nil).HandleMatchResultsOK), queue, matches)
 }
 
 // MockMatchmaker is a mock of Matchmaker interface.
