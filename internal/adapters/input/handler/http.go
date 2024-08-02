@@ -25,6 +25,7 @@ func NewHTTPHandler(srv ports.MatchmakingService) *HTTPHandler {
 
 // HandleFindMatch handles the find match request
 func (h *HTTPHandler) HandleFindMatch(ctx *gin.Context) {
+	queue := ctx.Params.ByName("queue")
 	var in FindMatchInput
 	err := ctx.Bind(&in)
 	if err != nil {
@@ -32,13 +33,12 @@ func (h *HTTPHandler) HandleFindMatch(ctx *gin.Context) {
 		return
 	}
 
-	t, err := h.service.FindMatch(ctx.Request.Context(), "global", domain.Player{
+	t, err := h.service.FindMatch(ctx.Request.Context(), queue, domain.Player{
 		ID:      in.PlayerID,
 		Ranking: in.Score,
 	})
 
 	if err != nil {
-		// TODO: log error
 		ctx.String(http.StatusInternalServerError, "failed to find a match")
 		return
 	}

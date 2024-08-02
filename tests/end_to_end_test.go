@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -28,6 +29,8 @@ type E2ETestSuite struct {
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
+	err := os.Setenv("MATCHMAKING_CFG", "json.eyJxdWV1ZXMiOnsiZ2xvYmFsIjp7Im5hbWUiOiJnbG9iYWwiLCJtYXhQbGF5ZXJzIjoyLCJuckJyYWNrZXRzIjoxMDAsIm1heFJhbmtpbmciOjEwMDAsIm1pblJhbmtpbmciOjEsIm1ha2VJdGVyYXRpb25zIjozfX0sIm1hdGNobWFrZXJzIjp7Imdsb2JhbCI6eyJuYW1lIjoiZ2xvYmFsIiwiaW50ZXJ2YWxTZWNzIjo1LCJtYWtlVGltZW91dFNlY3MiOjN9fX0=")
+	suite.Require().NoError(err)
 	setup(&suite.BaseTestSuite)
 	baseURL = suite.ServiceEndpoint
 }
@@ -155,7 +158,7 @@ func findMatchRequest() (response string, err error) {
 	})
 }
 func findMatchRequestWithInput(input handler.FindMatchInput) (response string, err error) {
-	path := fmt.Sprintf("/api/v1/queue")
+	path := fmt.Sprintf("/api/v1/queue/global")
 
 	in, err := json.Marshal(&input)
 
@@ -177,7 +180,7 @@ func findMatchRequestWithInput(input handler.FindMatchInput) (response string, e
 }
 
 func getMatchRequest(ticketID string, expectedStatus int) (response string, err error) {
-	path := fmt.Sprintf("/api/v1/queue/%s", ticketID)
+	path := fmt.Sprintf("/api/v1/ticket/%s", ticketID)
 	err = requests.
 		URL(path).
 		Host(baseURL).
@@ -189,7 +192,7 @@ func getMatchRequest(ticketID string, expectedStatus int) (response string, err 
 	return response, err
 }
 func getMatchRequestAny(ticketID string) (response string, err error) {
-	path := fmt.Sprintf("/api/v1/queue/%s", ticketID)
+	path := fmt.Sprintf("/api/v1/ticket/%s", ticketID)
 	err = requests.
 		URL(path).
 		Host(baseURL).
@@ -200,7 +203,7 @@ func getMatchRequestAny(ticketID string) (response string, err error) {
 }
 
 func cancelMatchRequest(ticketID string) (err error) {
-	path := fmt.Sprintf("/api/v1/queue/%s", ticketID)
+	path := fmt.Sprintf("/api/v1/ticket/%s", ticketID)
 	err = requests.
 		URL(path).
 		Delete().

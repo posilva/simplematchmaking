@@ -16,6 +16,12 @@ const (
 	TicketStateCanceled
 )
 
+// MatchmakingConfig is the configuration for the matchmaking service
+type MatchmakingConfig struct {
+	Queues      map[string]QueueConfig      `json:"queues" mapstructure:"queues" msgpack:"queues"`
+	Matchmakers map[string]MatchmakerConfig `json:"matchmakers" mapstructure:"matchmakers" msgpack:"matchmakers"`
+}
+
 // Player represents a player in the matchmaking service
 type Player struct {
 	// ID is the player ID
