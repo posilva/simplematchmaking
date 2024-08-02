@@ -101,12 +101,12 @@ func setupRedisContainer(suite *BaseTestSuite) {
 		testcontainers.WithWaitStrategyAndDeadline(
 			30*time.Second, wait.ForExposedPort()),
 	)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	ip, err := redisContainer.Host(suite.Context)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	port, err := redisContainer.MappedPort(suite.Context, "6379")
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	endpoint := fmt.Sprintf("%s:%s", ip, port.Port())
 	log.Printf("Redis endpoint: %s", endpoint)
@@ -114,11 +114,11 @@ func setupRedisContainer(suite *BaseTestSuite) {
 		InitAddress: []string{endpoint},
 	})
 
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.RedisEndpoint = endpoint
 	pingCmd := redisClient.B().Ping().Build()
 	err = redisClient.Do(suite.Context, pingCmd).Error()
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	suite.RedisContainer = redisContainer
 	suite.RedisClient = redisClient
@@ -126,7 +126,7 @@ func setupRedisContainer(suite *BaseTestSuite) {
 
 func teardown(suite *BaseTestSuite) {
 	err := suite.RedisContainer.Terminate(suite.Context)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	//err = suite.RedisClient.Do(suite.Context, suite.RedisClient.B().Flushall().Build()).Error()
 	//suite.NoError(err)
 }

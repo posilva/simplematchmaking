@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -28,6 +29,8 @@ type E2ETestSuite struct {
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
+	err := os.Setenv("MATCHMAKING_CFG", "json.eyJxdWV1ZXMiOnsiZ2xvYmFsIjp7Im5hbWUiOiJnbG9iYWwiLCJtYXhQbGF5ZXJzIjoyLCJuckJyYWNrZXRzIjoxMDAsIm1heFJhbmtpbmciOjEwMDAsIm1pblJhbmtpbmciOjEsIm1ha2VJdGVyYXRpb25zIjozfX0sIm1hdGNobWFrZXJzIjp7Imdsb2JhbCI6eyJuYW1lIjoiZ2xvYmFsIiwiaW50ZXJ2YWxTZWNzIjo1LCJtYWtlVGltZW91dFNlY3MiOjN9fX0=")
+	suite.Require().NoError(err)
 	setup(&suite.BaseTestSuite)
 	baseURL = suite.ServiceEndpoint
 }

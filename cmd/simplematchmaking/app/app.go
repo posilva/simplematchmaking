@@ -10,6 +10,8 @@ import (
 	"github.com/posilva/simplematchmaking/internal/adapters/output/logging"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/queues"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/repository"
+	"github.com/posilva/simplematchmaking/internal/core/ports"
+	configMM "github.com/posilva/simplematchmaking/internal/core/services/config"
 	"github.com/redis/rueidis"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
@@ -46,18 +48,57 @@ func Run() {
 func createService() (*services.MatchmakingService, error) {
 	logger := logging.NewSimpleLogger()
 
+	codec := codecs.NewJSONCodec()
+
+	envVarConfig := configMM.NewEnvVar()
+	err := envVarConfig.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %v", err)
+	}
+
 	rc, err := rueidis.NewClient(rueidis.ClientOption{
 		InitAddress: []string{config.GetRedisAddr()}},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create redis client: %v", err)
 	}
+
 	lock, err := lock.NewRedisLock(rc, 1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create matchmaker: %v", err)
+	}
 
-	codec := codecs.NewJSONCodec()
+	repo := repository.NewRedisRepository(rc, codec, logger)
 
+	matchmakers := make(map[string]ports.Matchmaker)
+
+	for mmName, mmCfg := range envVarConfig.Get().Matchmakers {
+		if qCfg, ok := envVarConfig.Get().Queues[mmCfg.Name]; ok {
+			q := queues.NewRedisQueue(rc, qCfg, codec, lock)
+			mm, err := services.NewMatchmaker(q, mmCfg, logger)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create matchmaker with name '%v': %v", q.Name(), err)
+			}
+			matchmakers[mmName] = mm
+			continue
+		}
+		return nil, fmt.Errorf("queue with name '%v' not found", mmCfg.Name)
+	}
+
+	if len(matchmakers) == 0 {
+		mm, name, err := defaultMatchmaker(rc, logger, codec, lock)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create default matchmaker: %v", err)
+		}
+		matchmakers[name] = mm
+	}
+
+	return services.NewMatchmakingService(logger, repo, matchmakers), nil
+}
+func defaultMatchmaker(rc rueidis.Client, logger ports.Logger, codec ports.Codec, lock ports.Lock) (ports.Matchmaker, string, error) {
+	name := "default"
 	mmCfg := domain.MatchmakerConfig{
-		Name:            "main",
+		Name:            name,
 		IntervalSecs:    5,
 		MakeTimeoutSecs: 4,
 	}
@@ -68,16 +109,13 @@ func createService() (*services.MatchmakingService, error) {
 		MinRanking:     1,
 		MaxRanking:     1000,
 		MakeIterations: 3,
-		Name:           "global",
+		Name:           name,
 	}
 
 	queue := queues.NewRedisQueue(rc, qConfig, codec, lock)
 	mm, err := services.NewMatchmaker(queue, mmCfg, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create matchmaker: %v", err)
+		return nil, "", fmt.Errorf("failed to create matchmaker: %v", err)
 	}
-
-	repo := repository.NewRedisRepository(rc, codec, logger)
-
-	return services.NewMatchmakingService(logger, repo, mm), nil
+	return mm, name, nil
 }

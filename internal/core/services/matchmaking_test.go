@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/posilva/simplematchmaking/internal/core/domain"
+	"github.com/posilva/simplematchmaking/internal/core/ports"
 	"github.com/posilva/simplematchmaking/internal/core/ports/mocks"
 	"github.com/posilva/simplematchmaking/internal/testutil"
 	"github.com/stretchr/testify/require"
@@ -36,10 +37,13 @@ func TestMatchmakingService_FindMatch(t *testing.T) {
 
 	repoMock.EXPECT().UpdateTicket(gomock.Any(), gomock.Any()).Return(nil)
 
+	mms := make(map[string]ports.Matchmaker)
+	mms["queue1"] = mmMock
+
 	s := NewMatchmakingService(
 		log,
 		repoMock,
-		mmMock,
+		mms,
 	)
 	ticket, err := s.FindMatch(ctx, "queue1", domain.Player{
 		ID: pID,
@@ -59,6 +63,8 @@ func TestMatchmakingService_FindMatch_Exist(t *testing.T) {
 	repoMock := mocks.NewMockRepository(ctrl)
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
+	mms := make(map[string]ports.Matchmaker)
+	mms["queue1"] = mmMock
 
 	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
 	repoMock.EXPECT().ReservePlayerSlot(
@@ -67,7 +73,7 @@ func TestMatchmakingService_FindMatch_Exist(t *testing.T) {
 	s := NewMatchmakingService(
 		log,
 		repoMock,
-		mmMock,
+		mms,
 	)
 	expectedID, err := s.FindMatch(ctx, "queue1", domain.Player{
 		ID: "player1",
@@ -86,13 +92,16 @@ func TestMatchmakingService_FindMatch_Error(t *testing.T) {
 	mmMock := mocks.NewMockMatchmaker(ctrl)
 	log := testutil.NewLogger(t)
 
+	mms := make(map[string]ports.Matchmaker)
+	mms["queue1"] = mmMock
+
 	mmMock.EXPECT().Subscribe(gomock.Any()).Return()
 	repoMock.EXPECT().ReservePlayerSlot(
 		ctx, "player1", "queue1", gomock.Any()).Return("", fmt.Errorf("any error"))
 	s := NewMatchmakingService(
 		log,
 		repoMock,
-		mmMock,
+		mms,
 	)
 	_, err := s.FindMatch(ctx, "queue1", domain.Player{
 		ID: "player1",

@@ -14,20 +14,22 @@ import (
 
 // MatchmakingService defines the Matchmaking service interface
 type MatchmakingService struct {
-	logger     ports.Logger
-	matchmaker ports.Matchmaker
-	repository ports.Repository
+	logger      ports.Logger
+	repository  ports.Repository
+	matchmakers map[string]ports.Matchmaker
 }
 
 // NewMatchmakingService creates a new MatchmakingService
-func NewMatchmakingService(logger ports.Logger, repo ports.Repository, mm ports.Matchmaker) *MatchmakingService {
+func NewMatchmakingService(logger ports.Logger, repo ports.Repository, mms map[string]ports.Matchmaker) *MatchmakingService {
 	srv := &MatchmakingService{
-		logger:     logger,
-		matchmaker: mm,
-		repository: repo,
+		logger:      logger,
+		repository:  repo,
+		matchmakers: mms,
 	}
 
-	mm.Subscribe(srv)
+	for _, mm := range srv.matchmakers {
+		mm.Subscribe(srv)
+	}
 	return srv
 }
 
@@ -59,6 +61,11 @@ func (s *MatchmakingService) HandleMatchResultsOK(queue string, matches []domain
 
 // FindMatch finds a match given a player
 func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p domain.Player) (domain.Ticket, error) {
+	matchmaker, ok := s.matchmakers[queue]
+	if !ok {
+		s.logger.Error("Matchmaker not found", "queue", queue)
+		return domain.Ticket{}, fmt.Errorf("matchmaker not found for queue: %s", queue)
+	}
 	ticketID := ksuid.New().String()
 	now := time.Now().UTC().Unix()
 
@@ -75,7 +82,7 @@ func (s *MatchmakingService) FindMatch(ctx context.Context, queue string, p doma
 		}, nil
 	}
 
-	err = s.matchmaker.AddPlayer(ctx, ticketID, p)
+	err = matchmaker.AddPlayer(ctx, ticketID, p)
 	if err != nil {
 		s.logger.Error("Failed to add player to the matchmaker", err)
 		return domain.Ticket{}, fmt.Errorf("failed to add player to the matchmaker: %v", err)
