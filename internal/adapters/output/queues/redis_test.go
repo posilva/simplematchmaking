@@ -306,7 +306,9 @@ func TestRedisQueue_Make_RedisError(t *testing.T) {
 }
 
 func TestRedisQueue_MakeExperiment(t *testing.T) {
-
+	if !testing.Short() {
+		t.Skip("skipping test in short mode as this is to run in a local redis instance")
+	}
 	count := int64(8)
 	// player with ranking n
 	maxPlayers := 1000
