@@ -50,10 +50,21 @@ spec:
           volumeMounts:
             - name: nginx
               mountPath: /usr/share/nginx/html
+          env:
+            - name: MATCHMAKING_CFG
+              valueFrom:
+                configMapKeyRef:
+                  name: smm-configmap
+                  key: matchmaking_config
+            - name: SMM_REDIS_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: smm-configmap
+                  key: redis_address
       volumes:
         - name: nginx
           configMap:
-            name: nginx-configmap
+            name: smm-configmap
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
