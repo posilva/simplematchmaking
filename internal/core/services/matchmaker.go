@@ -57,7 +57,6 @@ func (m *Matchmaker) Matchmake() {
 		return
 	}
 	if m.matchResultHandler != nil {
-		m.logger.Debug("Match results found", "matches", len(mr))
 		m.matchResultHandler.HandleMatchResultsOK(m.queue.Name(), mr)
 	}
 }
