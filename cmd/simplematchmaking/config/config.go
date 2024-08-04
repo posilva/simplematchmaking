@@ -21,7 +21,7 @@ func init() {
 	}
 
 	// set defaults
-	viper.SetDefault(httpAddr, ":8808")
+	viper.SetDefault(httpAddr, ":8081")
 	viper.SetDefault(redisAddr, "localhost:6379")
 
 	viper.BindEnv(httpAddr)
