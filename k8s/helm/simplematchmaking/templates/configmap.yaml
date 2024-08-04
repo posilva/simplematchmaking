@@ -6,4 +6,5 @@ data:
   index.html: |
     <h1>Matchmaking ready!!!</h1>
   matchmaking_config: "json.eyJxdWV1ZXMiOnsiZ2xvYmFsIjp7Im5hbWUiOiJnbG9iYWwiLCJtYXhQbGF5ZXJzIjoyLCJuckJyYWNrZXRzIjoxMDAsIm1heFJhbmtpbmciOjEwMDAsIm1pblJhbmtpbmciOjEsIm1ha2VJdGVyYXRpb25zIjozfX0sIm1hdGNobWFrZXJzIjp7Imdsb2JhbCI6eyJuYW1lIjoiZ2xvYmFsIiwiaW50ZXJ2YWxTZWNzIjo1LCJtYWtlVGltZW91dFNlY3MiOjN9fX0="
-  redis_address: "redis-master:6379"
+  redis_address: "redis-service.default.svc.cluster.local:6379"
+  redis_address: ":8081"

@@ -61,6 +61,12 @@ spec:
                 configMapKeyRef:
                   name: smm-configmap
                   key: redis_address
+
+            - name: SMM_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: smm-configmap
+                  key: address
       volumes:
         - name: nginx
           configMap:
