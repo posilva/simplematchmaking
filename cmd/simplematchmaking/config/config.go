@@ -11,7 +11,7 @@ const (
 
 func init() {
 	viper.AddConfigPath(".")
-	viper.SetEnvPrefix("SLMM")
+	viper.SetEnvPrefix("SMM")
 	viper.SetConfigName("simplematchmaking")
 	viper.SetConfigType("env")
 
@@ -23,6 +23,9 @@ func init() {
 	// set defaults
 	viper.SetDefault(httpAddr, ":8808")
 	viper.SetDefault(redisAddr, "localhost:6379")
+
+	viper.BindEnv(httpAddr)
+	viper.BindEnv(redisAddr)
 
 }
 
