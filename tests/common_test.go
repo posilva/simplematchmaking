@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/docker/docker/pkg/ioutils"
@@ -80,18 +81,27 @@ func setup(suite *BaseTestSuite) {
 	if err != nil {
 		panic("failed to get free port: " + err.Error())
 	}
-
+	remoteAddress, remote := os.LookupEnv("TEST_REMOTE_ADDR")
+	if remote {
+		fmt.Println("Remote address: ", remoteAddress)
+	}
 	suite.ServiceEndpoint = fmt.Sprintf("127.0.0.1:%d", port)
+	if remote {
+		// this allows to run end 2 end tests against a remote endpoint
+		suite.ServiceEndpoint = remoteAddress
+	}
+
 	log.Println("Service endpoint: ", suite.ServiceEndpoint)
 	config.SetAddr(suite.ServiceEndpoint)
 	config.SetRedisAddr(suite.RedisEndpoint)
 	config.SetLocal(true)
-
-	go func() {
-		app.Run()
-	}()
-	waitForService(suite)
-	log.Printf("Service is running on %s", suite.ServiceEndpoint)
+	if !remote {
+		go func() {
+			app.Run()
+		}()
+		waitForService(suite)
+		log.Printf("Service is running on %s", suite.ServiceEndpoint)
+	}
 }
 
 func setupRedisContainer(suite *BaseTestSuite) {
@@ -101,12 +111,12 @@ func setupRedisContainer(suite *BaseTestSuite) {
 		testcontainers.WithWaitStrategyAndDeadline(
 			30*time.Second, wait.ForExposedPort()),
 	)
-	suite.Require().NoError(err)
+	suite.NoError(err)
 
 	ip, err := redisContainer.Host(suite.Context)
-	suite.Require().NoError(err)
+	suite.NoError(err)
 	port, err := redisContainer.MappedPort(suite.Context, "6379")
-	suite.Require().NoError(err)
+	suite.NoError(err)
 
 	endpoint := fmt.Sprintf("%s:%s", ip, port.Port())
 	log.Printf("Redis endpoint: %s", endpoint)
@@ -114,11 +124,11 @@ func setupRedisContainer(suite *BaseTestSuite) {
 		InitAddress: []string{endpoint},
 	})
 
-	suite.Require().NoError(err)
+	suite.NoError(err)
 	suite.RedisEndpoint = endpoint
 	pingCmd := redisClient.B().Ping().Build()
 	err = redisClient.Do(suite.Context, pingCmd).Error()
-	suite.Require().NoError(err)
+	suite.NoError(err)
 
 	suite.RedisContainer = redisContainer
 	suite.RedisClient = redisClient
@@ -126,7 +136,7 @@ func setupRedisContainer(suite *BaseTestSuite) {
 
 func teardown(suite *BaseTestSuite) {
 	err := suite.RedisContainer.Terminate(suite.Context)
-	suite.Require().NoError(err)
+	suite.NoError(err)
 	//err = suite.RedisClient.Do(suite.Context, suite.RedisClient.B().Flushall().Build()).Error()
 	//suite.NoError(err)
 }
