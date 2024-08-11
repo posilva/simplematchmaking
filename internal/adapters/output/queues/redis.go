@@ -95,7 +95,7 @@ func (q *RedisQueue) Make(ctx context.Context) (matches []domain.MatchResult, er
 
 	// iterate over chunks of keys to given how redis work with LMPop we want to traverse all the keys
 	// here we are using a chunk of 3 keys
-	chunkSize := 3
+	chunkSize := q.config.MakeIterations
 	iteration := 0
 	debugCounter := 0
 	for {
@@ -189,7 +189,6 @@ func allKeysSetup(prefix string, queueConfig domain.QueueConfig) []string {
 		bracket := keyName(prefix, i)
 		allKeys = append(allKeys, bracket)
 	}
-	slices.Sort(allKeys)
 	allKeys = slices.Compact(allKeys)
 	return allKeys
 }

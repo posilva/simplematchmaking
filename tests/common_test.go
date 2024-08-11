@@ -92,11 +92,11 @@ func setup(suite *BaseTestSuite) {
 	}
 
 	log.Println("Service endpoint: ", suite.ServiceEndpoint)
-	config.SetAddr(suite.ServiceEndpoint)
-	config.SetRedisAddr(suite.RedisEndpoint)
-	config.SetLocal(true)
 	if !remote {
 		go func() {
+			config.SetAddr(suite.ServiceEndpoint)
+			config.SetRedisAddr(suite.RedisEndpoint)
+			config.SetLocal(true)
 			app.Run()
 		}()
 		waitForService(suite)
@@ -137,8 +137,8 @@ func setupRedisContainer(suite *BaseTestSuite) {
 func teardown(suite *BaseTestSuite) {
 	err := suite.RedisContainer.Terminate(suite.Context)
 	suite.NoError(err)
-	//err = suite.RedisClient.Do(suite.Context, suite.RedisClient.B().Flushall().Build()).Error()
-	//suite.NoError(err)
+	// err = suite.RedisClient.Do(suite.Context, suite.RedisClient.B().Flushall().Build()).Error()
+	// suite.NoError(err)
 }
 
 /**

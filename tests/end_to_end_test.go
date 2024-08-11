@@ -62,6 +62,7 @@ func (suite *E2ETestSuite) TestCancelMatch() {
 	err = cancelMatchRequest(out.TicketID)
 	suite.Require().NoError(err)
 }
+
 func (suite *E2ETestSuite) SetupTest() {
 	cmd := suite.RedisClient.B().Flushall().Build()
 	err := suite.RedisClient.Do(suite.Context, cmd).Error()
@@ -106,6 +107,7 @@ func (pg *PlayerGenerator) GeneratePlayers(maxPlayers int, min int, max int) {
 	wg.Add(maxPlayers)
 	for i := 0; i < maxPlayers; i++ {
 		go func() {
+			time.Sleep(time.Duration(rand.Intn(1000-10)+10) * time.Millisecond)
 			playerID := ksuid.New().String()
 			score := rand.Intn(max-min) + min
 			response, err := findMatchRequestWithInput(handler.FindMatchInput{
@@ -113,12 +115,12 @@ func (pg *PlayerGenerator) GeneratePlayers(maxPlayers int, min int, max int) {
 				Score:    score,
 			})
 			if err != nil {
-				fmt.Println("Error: ", err)
+				fmt.Println("Error finding match: ", err)
 			}
 			var out handler.FindMatchOutput
 			err = json.Unmarshal([]byte(response), &out)
 			if err != nil {
-				fmt.Println("Error: ", err)
+				fmt.Println("Error: ", err, out)
 			}
 			pg.AddPlayer(playerID, out.TicketID)
 			wg.Done()
@@ -135,7 +137,7 @@ func (pg *PlayerGenerator) CheckTickets(suite *E2ETestSuite) {
 		// check if a match is available
 		response, err := getMatchRequestAny(ticketID)
 		if requests.HasStatusErr(err, http.StatusNotFound) {
-			//suite.T().Logf("Match not found for ticketID: %s", ticketID)
+			// suite.T().Logf("Match not found for ticketID: %s", ticketID)
 			continue
 		}
 		// match is available
@@ -177,8 +179,8 @@ func (suite *E2ETestSuite) TestMatchmaking() {
 		}
 	}
 	// TODO confirm the match to clean up tickets (or they will expire later)
-
 }
+
 func TestE2E(t *testing.T) {
 	suite.Run(t, new(E2ETestSuite))
 }
@@ -196,13 +198,13 @@ func findMatchRequest() (response string, err error) {
 		Score:    1,
 	})
 }
+
 func findMatchRequestWithInput(input handler.FindMatchInput) (response string, err error) {
 	path := fmt.Sprintf("/api/v1/queue/global")
 
 	in, err := json.Marshal(&input)
-
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to marshal input: %v => %w", input, err)
 	}
 
 	err = requests.
@@ -215,6 +217,9 @@ func findMatchRequestWithInput(input handler.FindMatchInput) (response string, e
 		CheckStatus(http.StatusOK).
 		ToString(&response).
 		Fetch(context.Background())
+	if err != nil {
+		fmt.Printf("failed making http request: %v\n", err)
+	}
 	return response, err
 }
 
@@ -230,6 +235,7 @@ func getMatchRequest(ticketID string, expectedStatus int) (response string, err 
 
 	return response, err
 }
+
 func getMatchRequestAny(ticketID string) (response string, err error) {
 	path := fmt.Sprintf("/api/v1/ticket/%s", ticketID)
 	err = requests.
