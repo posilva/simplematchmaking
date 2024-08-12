@@ -22,7 +22,7 @@ import (
 // Run starts the application
 func Run() {
 	r := gin.New()
-	//r.Use(gin.Logger())
+	// r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
 	service, err := createService()
@@ -42,7 +42,6 @@ func Run() {
 	if err != nil {
 		panic(fmt.Errorf("failed to start the server %v", err))
 	}
-
 }
 
 func createService() (*services.MatchmakingService, error) {
@@ -57,7 +56,8 @@ func createService() (*services.MatchmakingService, error) {
 	}
 
 	rc, err := rueidis.NewClient(rueidis.ClientOption{
-		InitAddress: []string{config.GetRedisAddr()}},
+		InitAddress: []string{config.GetRedisAddr()},
+	},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create redis client: %v", err)
@@ -95,6 +95,7 @@ func createService() (*services.MatchmakingService, error) {
 
 	return services.NewMatchmakingService(logger, repo, matchmakers), nil
 }
+
 func defaultMatchmaker(rc rueidis.Client, logger ports.Logger, codec ports.Codec, lock ports.Lock) (ports.Matchmaker, string, error) {
 	name := "default"
 	mmCfg := domain.MatchmakerConfig{
