@@ -52,7 +52,7 @@ docker-build:
 	docker buildx build --no-cache --load --platform linux/arm64 -t simplematchmaking --progress plain  .
 
 docker-run:
-	docker run -d  -it simplematchmaking
+	docker run --network="host"  --rm  -e MATCHMAKING_CFG=$$MATCHMAKING_CFG -p 4566:4566 -p 8081:8000 simplematchmaking:latest
 
 mocks:
 	mockgen -source=internal/core/ports/ports.go -destination=internal/core/ports/mocks/ports_mock.go -package=mocks

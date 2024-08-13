@@ -18,7 +18,6 @@ FROM alpine:3.19 AS build-release-stage
 
 WORKDIR /
 
-CMD
 COPY --from=build-stage /simplematchmaking /simplematchmaking
 
 EXPOSE 8081
