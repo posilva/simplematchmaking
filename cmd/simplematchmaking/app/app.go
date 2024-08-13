@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/posilva/simplematchmaking/cmd/simplematchmaking/config"
 	"github.com/posilva/simplematchmaking/internal/adapters/input/handler"
+	"github.com/posilva/simplematchmaking/internal/adapters/input/handler/health"
 	"github.com/posilva/simplematchmaking/internal/adapters/input/handler/shutdown"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/lock"
 	"github.com/posilva/simplematchmaking/internal/adapters/output/logging"
@@ -26,10 +27,19 @@ func Run() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	service, err := createService()
+	rc, err := rueidis.NewClient(rueidis.ClientOption{
+		InitAddress: []string{config.GetRedisAddr()},
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to create redis client: %v", err))
+	}
+
+	service, err := createService(rc)
 	if err != nil {
 		panic(fmt.Errorf("failed to create service instance: %v", err))
 	}
+
+	health.Setup(r, rc)
 
 	httpHandler := handler.NewHTTPHandler(service)
 
@@ -52,7 +62,7 @@ func Run() {
 		})
 }
 
-func createService() (*services.MatchmakingService, error) {
+func createService(rc rueidis.Client) (*services.MatchmakingService, error) {
 	logger := logging.NewSimpleLogger()
 
 	codec := codecs.NewJSONCodec()
@@ -61,14 +71,6 @@ func createService() (*services.MatchmakingService, error) {
 	err := envVarConfig.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
-	}
-
-	rc, err := rueidis.NewClient(rueidis.ClientOption{
-		InitAddress: []string{config.GetRedisAddr()},
-	},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create redis client: %v", err)
 	}
 
 	lock, err := lock.NewRedisLock(rc, 1)
