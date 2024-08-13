@@ -5,10 +5,14 @@
 replicaCount: 1
 
 image:
-  repository: "ghcr.io/posilva/simplematchmaking/simplematchmaking"
-  pullPolicy: IfNotPresent
+  repository: "simplematchmaking"
+  pullPolicy: Never 
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "5bd00817012ad48e423fadf0efbbfcf6b93b9cbe"
+  tag: "latest"
+    #repository: "ghcr.io/posilva/simplematchmaking/simplematchmaking"
+    #pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  #tag: "5bd00817012ad48e423fadf0efbbfcf6b93b9cbe"
 
 imagePullSecrets: []
 nameOverride: ""
